@@ -41,3 +41,34 @@ export interface MindMapLink {
   strength: number; // 0-1, how related the articles are
   type: 'category' | 'region' | 'semantic';
 }
+
+export interface KeywordCluster {
+  id: string;
+  keyword: string;
+  articles: NewsArticle[];
+  sentiment: 'positive' | 'negative' | 'mixed';
+  frequency: number;
+  lastUpdated: string;
+  relatedKeywords: string[];
+}
+
+export interface KnowledgeSeries {
+  id: string;
+  title: string;
+  description: string;
+  keywords: string[];
+  articles: NewsArticle[];
+  timeline: TimelineEvent[];
+  category: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TimelineEvent {
+  id: string;
+  date: string;
+  title: string;
+  summary: string;
+  articleId: string;
+  importance: number; // 0-1
+}

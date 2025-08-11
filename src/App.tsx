@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Settings, RefreshCw, Newspaper, TrendingUp, Brain, ArrowLeft } from 'lucide-react';
+import { Settings, RefreshCw, Newspaper, TrendingUp, Brain, ArrowLeft, BookOpen } from 'lucide-react';
 import { SwipeableCard } from './components/SwipeableCard';
 import { SettingsModal } from './components/SettingsModal';
 import { MindMap } from './components/MindMap';
+import { KnowledgeOrganization } from './components/KnowledgeOrganization';
 import { usePreferences } from './hooks/usePreferences';
 import { useSwipeHistory } from './hooks/useSwipeHistory';
 import { mockNews, getPersonalizedNews, getRandomNews } from './data/mockNews';
@@ -17,7 +18,7 @@ function App() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [stats, setStats] = useState({ liked: 0, passed: 0 });
-  const [currentView, setCurrentView] = useState<'news' | 'mindmap'>('news');
+  const [currentView, setCurrentView] = useState<'news' | 'mindmap' | 'knowledge'>('news');
 
   const loadNewArticles = () => {
     setIsLoading(true);
@@ -118,6 +119,16 @@ function App() {
       </div>
     );
   }
+
+  if (currentView === 'knowledge') {
+    return (
+      <KnowledgeOrganization
+        swipeHistory={swipeHistory}
+        onBack={() => setCurrentView('news')}
+      />
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
       {/* Header */}
@@ -139,6 +150,12 @@ function App() {
                 className="w-9 h-9 bg-purple-100 hover:bg-purple-200 rounded-full flex items-center justify-center transition-colors"
               >
                 <Brain className="w-4 h-4 text-purple-600" />
+              </button>
+              <button
+                onClick={() => setCurrentView('knowledge')}
+                className="w-9 h-9 bg-indigo-100 hover:bg-indigo-200 rounded-full flex items-center justify-center transition-colors"
+              >
+                <BookOpen className="w-4 h-4 text-indigo-600" />
               </button>
               <button
                 onClick={() => setIsSettingsOpen(true)}
