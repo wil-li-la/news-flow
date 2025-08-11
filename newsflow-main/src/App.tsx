@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Settings, RefreshCw, Newspaper, TrendingUp } from 'lucide-react';
+import { Settings, RefreshCw, Newspaper, TrendingUp, BookOpen } from 'lucide-react';
 import { SwipeableCard } from './components/SwipeableCard';
 import { SettingsModal } from './components/SettingsModal';
+import { LibraryModal } from './components/LibraryModal';
 import { usePreferences } from './hooks/usePreferences';
-import { mockNews, getPersonalizedNews, getRandomNews } from './data/mockNews';
+import { getPersonalizedNews, getRandomNews } from './data/mockNews';
 import { NewsArticle, SwipeAction } from './types';
 
 function App() {
@@ -12,8 +13,10 @@ function App() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [seenArticleIds, setSeenArticleIds] = useState<string[]>([]);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isLibraryOpen, setIsLibraryOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [stats, setStats] = useState({ liked: 0, passed: 0 });
+  const [library, setLibrary] = useState<{ [category: string]: NewsArticle[] }>({});
 
   const loadNewArticles = () => {
     setIsLoading(true);
@@ -53,6 +56,14 @@ function App() {
 
   const handleSwipe = (swipeAction: SwipeAction) => {
     updatePreferences(swipeAction);
+
+    if (swipeAction.direction === 'right') {
+      const category = swipeAction.article.category || 'Other';
+      setLibrary(prev => ({
+        ...prev,
+        [category]: [...(prev[category] || []), swipeAction.article]
+      }));
+    }
     
     // Update stats
     setStats(prev => ({
@@ -91,6 +102,12 @@ function App() {
               </div>
             </div>
             <div className="flex items-center gap-3">
+              <button
+                onClick={() => setIsLibraryOpen(true)}
+                className="w-9 h-9 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center transition-colors"
+              >
+                <BookOpen className="w-4 h-4 text-gray-600" />
+              </button>
               <button
                 onClick={() => setIsSettingsOpen(true)}
                 className="w-9 h-9 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center transition-colors"
@@ -192,6 +209,11 @@ function App() {
         onClose={() => setIsSettingsOpen(false)}
         preferences={preferences}
         onUpdateRatio={setPersonalizedRatio}
+      />
+      <LibraryModal
+        isOpen={isLibraryOpen}
+        onClose={() => setIsLibraryOpen(false)}
+        library={library}
       />
     </div>
   );
