@@ -22,3 +22,22 @@ export interface SwipeAction {
   direction: 'left' | 'right';
   article: NewsArticle;
 }
+
+export interface MindMapNode {
+  id: string;
+  title: string;
+  category: string;
+  region: string;
+  sentiment: 'liked' | 'disliked';
+  x?: number;
+  y?: number;
+  fx?: number | null;
+  fy?: number | null;
+}
+
+export interface MindMapLink {
+  source: string | MindMapNode;
+  target: string | MindMapNode;
+  strength: number; // 0-1, how related the articles are
+  type: 'category' | 'region' | 'semantic';
+}

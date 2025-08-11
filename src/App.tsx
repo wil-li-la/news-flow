@@ -1,19 +1,23 @@
 import React, { useState, useEffect } from 'react';
-import { Settings, RefreshCw, Newspaper, TrendingUp } from 'lucide-react';
+import { Settings, RefreshCw, Newspaper, TrendingUp, Brain, ArrowLeft } from 'lucide-react';
 import { SwipeableCard } from './components/SwipeableCard';
 import { SettingsModal } from './components/SettingsModal';
+import { MindMap } from './components/MindMap';
 import { usePreferences } from './hooks/usePreferences';
+import { useSwipeHistory } from './hooks/useSwipeHistory';
 import { mockNews, getPersonalizedNews, getRandomNews } from './data/mockNews';
 import { NewsArticle, SwipeAction } from './types';
 
 function App() {
   const { preferences, updatePreferences, setPersonalizedRatio } = usePreferences();
+  const { swipeHistory, addSwipeAction } = useSwipeHistory();
   const [currentArticles, setCurrentArticles] = useState<NewsArticle[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [seenArticleIds, setSeenArticleIds] = useState<string[]>([]);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [stats, setStats] = useState({ liked: 0, passed: 0 });
+  const [currentView, setCurrentView] = useState<'news' | 'mindmap'>('news');
 
   const loadNewArticles = () => {
     setIsLoading(true);
@@ -53,6 +57,7 @@ function App() {
 
   const handleSwipe = (swipeAction: SwipeAction) => {
     updatePreferences(swipeAction);
+    addSwipeAction(swipeAction);
     
     // Update stats
     setStats(prev => ({
@@ -75,6 +80,44 @@ function App() {
   const currentArticle = currentArticles[currentIndex];
   const nextArticle = currentArticles[currentIndex + 1];
 
+  if (currentView === 'mindmap') {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-blue-50">
+        {/* Header */}
+        <header className="bg-white/80 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-30">
+          <div className="max-w-6xl mx-auto px-4 py-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => setCurrentView('news')}
+                  className="w-9 h-9 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center transition-colors"
+                >
+                  <ArrowLeft className="w-4 h-4 text-gray-600" />
+                </button>
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 bg-purple-600 rounded-lg flex items-center justify-center">
+                    <Brain className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <h1 className="text-lg font-bold text-gray-900">Mind Map</h1>
+                    <p className="text-xs text-gray-600">Your news connections</p>
+                  </div>
+                </div>
+              </div>
+              <div className="text-sm text-gray-600">
+                {swipeHistory.length} articles analyzed
+              </div>
+            </div>
+          </div>
+        </header>
+
+        {/* Mind Map */}
+        <main className="h-[calc(100vh-80px)]">
+          <MindMap swipeHistory={swipeHistory} />
+        </main>
+      </div>
+    );
+  }
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
       {/* Header */}
@@ -91,6 +134,12 @@ function App() {
               </div>
             </div>
             <div className="flex items-center gap-3">
+              <button
+                onClick={() => setCurrentView('mindmap')}
+                className="w-9 h-9 bg-purple-100 hover:bg-purple-200 rounded-full flex items-center justify-center transition-colors"
+              >
+                <Brain className="w-4 h-4 text-purple-600" />
+              </button>
               <button
                 onClick={() => setIsSettingsOpen(true)}
                 className="w-9 h-9 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center transition-colors"
