@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { Settings, RefreshCw, Newspaper, TrendingUp, Brain, ArrowLeft, BookOpen } from 'lucide-react';
+import { Settings, RefreshCw, Newspaper, TrendingUp, Brain, ArrowLeft, BookOpen, Search } from 'lucide-react';
 import { SwipeableCard } from './components/SwipeableCard';
 import { SettingsModal } from './components/SettingsModal';
 import { MindMap } from './components/MindMap';
 import { KnowledgeOrganization } from './components/KnowledgeOrganization';
+import { SearchInterface } from './components/SearchInterface';
+import { SearchResults } from './components/SearchResults';
 import { usePreferences } from './hooks/usePreferences';
 import { useSwipeHistory } from './hooks/useSwipeHistory';
-import { mockNews, getPersonalizedNews, getRandomNews } from './data/mockNews';
+import { extendedMockNews, getPersonalizedNews, getRandomNews } from './data/mockNews';
 import { NewsArticle, SwipeAction } from './types';
 
 function App() {
@@ -18,7 +20,10 @@ function App() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [stats, setStats] = useState({ liked: 0, passed: 0 });
-  const [currentView, setCurrentView] = useState<'news' | 'mindmap' | 'knowledge'>('news');
+  const [currentView, setCurrentView] = useState<'news' | 'mindmap' | 'knowledge' | 'search' | 'search-results'>('news');
+  const [searchResults, setSearchResults] = useState<NewsArticle[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedArticle, setSelectedArticle] = useState<NewsArticle | null>(null);
 
   const loadNewArticles = () => {
     setIsLoading(true);
@@ -78,6 +83,21 @@ function App() {
     }
   };
 
+  const handleSearchResults = (results: NewsArticle[], query: string) => {
+    setSearchResults(results);
+    setSearchQuery(query);
+    setCurrentView('search-results');
+  };
+
+  const handleArticleSelect = (article: NewsArticle) => {
+    setSelectedArticle(article);
+    // You could open a detailed view or add to swipe queue
+  };
+
+  const handleBackToNews = () => {
+    setCurrentView('news');
+  };
+
   const currentArticle = currentArticles[currentIndex];
   const nextArticle = currentArticles[currentIndex + 1];
 
@@ -100,13 +120,13 @@ function App() {
                     <Brain className="w-5 h-5 text-white" />
                   </div>
                   <div>
-                    <h1 className="text-lg font-bold text-gray-900">Mind Map</h1>
+                    <h1 className="text-lg font-bold text-gray-900">Knowledge Network</h1>
                     <p className="text-xs text-gray-600">Your news connections</p>
                   </div>
                 </div>
               </div>
               <div className="text-sm text-gray-600">
-                {swipeHistory.length} articles analyzed
+                {swipeHistory.filter(s => s.direction === 'right').length} interests mapped
               </div>
             </div>
           </div>
@@ -129,6 +149,26 @@ function App() {
     );
   }
 
+  if (currentView === 'search') {
+    return (
+      <SearchInterface
+        onSearchResults={handleSearchResults}
+        onClose={handleBackToNews}
+      />
+    );
+  }
+
+  if (currentView === 'search-results') {
+    return (
+      <SearchResults
+        results={searchResults}
+        query={searchQuery}
+        onBack={handleBackToNews}
+        onArticleSelect={handleArticleSelect}
+      />
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
       {/* Header */}
@@ -140,7 +180,7 @@ function App() {
                 <Newspaper className="w-5 h-5 text-white" />
               </div>
               <div>
-                <h1 className="text-lg font-bold text-gray-900">NewsFlow</h1>
+                <h1 className="text-lg font-bold text-gray-900">CogniSphere</h1>
                 <p className="text-xs text-gray-600">Discover your world</p>
               </div>
             </div>
@@ -156,6 +196,12 @@ function App() {
                 className="w-9 h-9 bg-indigo-100 hover:bg-indigo-200 rounded-full flex items-center justify-center transition-colors"
               >
                 <BookOpen className="w-4 h-4 text-indigo-600" />
+              </button>
+              <button
+                onClick={() => setCurrentView('search')}
+                className="w-9 h-9 bg-orange-100 hover:bg-orange-200 rounded-full flex items-center justify-center transition-colors"
+              >
+                <Search className="w-4 h-4 text-orange-600" />
               </button>
               <button
                 onClick={() => setIsSettingsOpen(true)}

@@ -22,12 +22,15 @@ export const calculateSemanticSimilarity = (article1: NewsArticle, article2: New
 };
 
 export const generateMindMapData = (swipeHistory: SwipeAction[]): { nodes: MindMapNode[], links: MindMapLink[] } => {
-  const nodes: MindMapNode[] = swipeHistory.map(swipe => ({
+  // Only include liked articles for the mind map (as per CogniSphere concept)
+  const likedSwipes = swipeHistory.filter(swipe => swipe.direction === 'right');
+  
+  const nodes: MindMapNode[] = likedSwipes.map(swipe => ({
     id: swipe.article.id,
     title: swipe.article.title,
     category: swipe.article.category,
     region: swipe.article.region,
-    sentiment: swipe.direction === 'right' ? 'liked' : 'disliked'
+    sentiment: 'liked' // Only liked articles in mind map
   }));
 
   const links: MindMapLink[] = [];
@@ -35,8 +38,8 @@ export const generateMindMapData = (swipeHistory: SwipeAction[]): { nodes: MindM
   // Generate links between articles
   for (let i = 0; i < nodes.length; i++) {
     for (let j = i + 1; j < nodes.length; j++) {
-      const article1 = swipeHistory[i].article;
-      const article2 = swipeHistory[j].article;
+      const article1 = likedSwipes[i].article;
+      const article2 = likedSwipes[j].article;
       
       let strength = 0;
       let linkType: 'category' | 'region' | 'semantic' = 'semantic';
