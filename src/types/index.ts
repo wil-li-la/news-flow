@@ -85,6 +85,17 @@ export interface KnowledgeSeries {
   updatedAt: string;
 }
 
+export interface SearchResult {
+  id: string;
+  query: string;
+  articles: NewsArticle[];
+  timestamp: string;
+}
+
+export interface SearchHistory {
+  queries: SearchResult[];
+}
+
 export interface TimelineEvent {
   id: string;
   date: string;

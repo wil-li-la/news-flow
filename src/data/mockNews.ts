@@ -103,15 +103,104 @@ export const mockNews: NewsArticle[] = [
   }
 ];
 
+// Extended news database for search functionality
+export const extendedMockNews: NewsArticle[] = [
+  ...mockNews,
+  // AI & Technology
+  {
+    id: '11',
+    title: 'OpenAI Releases GPT-5 with Revolutionary Reasoning Capabilities',
+    summary: 'The latest iteration of ChatGPT demonstrates unprecedented problem-solving abilities and multimodal understanding, setting new benchmarks in artificial intelligence.',
+    category: 'Technology',
+    region: 'Global',
+    imageUrl: 'https://images.pexels.com/photos/8386440/pexels-photo-8386440.jpeg?auto=compress&cs=tinysrgb&w=400',
+    source: 'AI Research Today',
+    publishedAt: '2025-01-20T15:30:00Z'
+  },
+  {
+    id: '12',
+    title: 'NVIDIA Unveils Next-Generation AI Chips for Healthcare',
+    summary: 'New specialized processors designed for medical imaging and drug discovery promise to accelerate healthcare AI applications by 10x.',
+    category: 'Technology',
+    region: 'North America',
+    imageUrl: 'https://images.pexels.com/photos/2582937/pexels-photo-2582937.jpeg?auto=compress&cs=tinysrgb&w=400',
+    source: 'Tech Hardware News',
+    publishedAt: '2025-01-20T12:15:00Z'
+  },
+  // Warren Buffett & Finance
+  {
+    id: '13',
+    title: 'Warren Buffett Increases Berkshire Hathaway\'s Apple Holdings',
+    summary: 'The Oracle of Omaha doubles down on technology investments, citing Apple\'s ecosystem strength and long-term growth potential.',
+    category: 'Finance',
+    region: 'North America',
+    imageUrl: 'https://images.pexels.com/photos/7567443/pexels-photo-7567443.jpeg?auto=compress&cs=tinysrgb&w=400',
+    source: 'Financial Times',
+    publishedAt: '2025-01-20T09:45:00Z'
+  },
+  {
+    id: '14',
+    title: 'Buffett\'s Annual Letter Warns of Market Speculation',
+    summary: 'Berkshire Hathaway\'s chairman cautions investors about excessive speculation in emerging technologies while maintaining optimism about American business.',
+    category: 'Finance',
+    region: 'Global',
+    imageUrl: 'https://images.pexels.com/photos/7567443/pexels-photo-7567443.jpeg?auto=compress&cs=tinysrgb&w=400',
+    source: 'Investment Weekly',
+    publishedAt: '2025-01-19T14:20:00Z'
+  },
+  // Climate & Renewable Energy
+  {
+    id: '15',
+    title: 'Solar Energy Costs Drop to Historic Lows Globally',
+    summary: 'New photovoltaic technology and manufacturing efficiencies make solar power the cheapest energy source in most regions worldwide.',
+    category: 'Science',
+    region: 'Global',
+    imageUrl: 'https://images.pexels.com/photos/2800832/pexels-photo-2800832.jpeg?auto=compress&cs=tinysrgb&w=400',
+    source: 'Renewable Energy Today',
+    publishedAt: '2025-01-19T11:30:00Z'
+  },
+  {
+    id: '16',
+    title: 'Tesla Announces Breakthrough in Battery Recycling',
+    summary: 'New process recovers 95% of lithium from used batteries, addressing sustainability concerns in electric vehicle production.',
+    category: 'Technology',
+    region: 'North America',
+    imageUrl: 'https://images.pexels.com/photos/2800832/pexels-photo-2800832.jpeg?auto=compress&cs=tinysrgb&w=400',
+    source: 'EV News Network',
+    publishedAt: '2025-01-18T16:45:00Z'
+  },
+  // Quantum Computing
+  {
+    id: '17',
+    title: 'Google Achieves Quantum Error Correction Milestone',
+    summary: 'Breakthrough in quantum error correction brings practical quantum computing applications significantly closer to reality.',
+    category: 'Technology',
+    region: 'North America',
+    imageUrl: 'https://images.pexels.com/photos/2582937/pexels-photo-2582937.jpeg?auto=compress&cs=tinysrgb&w=400',
+    source: 'Quantum Computing Review',
+    publishedAt: '2025-01-18T13:20:00Z'
+  },
+  {
+    id: '18',
+    title: 'IBM Partners with Universities for Quantum Education',
+    summary: 'Major initiative to train next generation of quantum programmers and researchers through hands-on access to quantum systems.',
+    category: 'Technology',
+    region: 'Global',
+    imageUrl: 'https://images.pexels.com/photos/2582937/pexels-photo-2582937.jpeg?auto=compress&cs=tinysrgb&w=400',
+    source: 'Education Tech Today',
+    publishedAt: '2025-01-17T10:15:00Z'
+  }
+];
+
 export const getRandomNews = (excludeIds: string[] = []): NewsArticle[] => {
-  return mockNews.filter(article => !excludeIds.includes(article.id));
+  return extendedMockNews.filter(article => !excludeIds.includes(article.id));
 };
 
 export const getPersonalizedNews = (
   preferences: UserPreferences,
   excludeIds: string[] = []
 ): NewsArticle[] => {
-  const availableNews = mockNews.filter(article => !excludeIds.includes(article.id));
+  const availableNews = extendedMockNews.filter(article => !excludeIds.includes(article.id));
   
   return availableNews
     .map(article => ({
@@ -120,6 +209,26 @@ export const getPersonalizedNews = (
     }))
     .sort((a, b) => b.score - a.score)
     .slice(0, 5);
+};
+
+export const searchNews = (query: string, limit: number = 10): NewsArticle[] => {
+  const searchTerms = query.toLowerCase().split(' ').filter(term => term.length > 2);
+  
+  return extendedMockNews
+    .map(article => ({
+      ...article,
+      relevanceScore: calculateRelevanceScore(article, searchTerms)
+    }))
+    .filter(article => article.relevanceScore > 0)
+    .sort((a, b) => b.relevanceScore - a.relevanceScore)
+    .slice(0, limit);
+};
+
+const calculateRelevanceScore = (article: NewsArticle, searchTerms: string[]): number => {
+  const text = `${article.title} ${article.summary}`.toLowerCase();
+  return searchTerms.reduce((score, term) => {
+    return score + (text.includes(term) ? 1 : 0);
+  }, 0);
 };
 
 const calculatePersonalizationScore = (article: NewsArticle, preferences: UserPreferences): number => {

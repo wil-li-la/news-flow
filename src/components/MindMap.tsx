@@ -12,9 +12,13 @@ export const MindMap: React.FC<MindMapProps> = ({ swipeHistory }) => {
   const svgRef = useRef<SVGSVGElement>(null);
   const [selectedNode, setSelectedNode] = useState<MindMapNode | null>(null);
   const [zoom, setZoom] = useState(1);
+  const [viewMode, setViewMode] = useState<'keywords' | 'articles'>('keywords');
+  
+  // Filter to only liked articles
+  const likedSwipes = swipeHistory.filter(swipe => swipe.direction === 'right');
 
   useEffect(() => {
-    if (!svgRef.current || swipeHistory.length === 0) return;
+    if (!svgRef.current || likedSwipes.length === 0) return;
 
     const svg = d3.select(svgRef.current);
     svg.selectAll("*").remove();
@@ -143,7 +147,7 @@ export const MindMap: React.FC<MindMapProps> = ({ swipeHistory }) => {
     return () => {
       simulation.stop();
     };
-  }, [swipeHistory]);
+  }, [swipeHistory, viewMode]);
 
   const handleZoomIn = () => {
     if (svgRef.current) {
@@ -169,7 +173,7 @@ export const MindMap: React.FC<MindMapProps> = ({ swipeHistory }) => {
     }
   };
 
-  if (swipeHistory.length === 0) {
+  if (likedSwipes.length === 0) {
     return (
       <div className="flex items-center justify-center h-full">
         <div className="text-center space-y-4">
@@ -178,7 +182,7 @@ export const MindMap: React.FC<MindMapProps> = ({ swipeHistory }) => {
           </div>
           <div>
             <h3 className="text-lg font-semibold text-gray-900 mb-2">No Data Yet</h3>
-            <p className="text-gray-600 text-sm">Start swiping on news articles to see your mind map</p>
+            <p className="text-gray-600 text-sm">Like some news articles to build your knowledge network</p>
           </div>
         </div>
       </div>
@@ -215,11 +219,7 @@ export const MindMap: React.FC<MindMapProps> = ({ swipeHistory }) => {
         <div className="space-y-2 text-xs">
           <div className="flex items-center gap-2">
             <div className="w-4 h-4 rounded-full border-2 border-green-500 bg-blue-500"></div>
-            <span>Liked Article</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded-full border-2 border-red-500 bg-blue-500"></div>
-            <span>Disliked Article</span>
+            <span>Your Interests</span>
           </div>
           <div className="space-y-1">
             <div className="flex items-center gap-2">
@@ -240,7 +240,7 @@ export const MindMap: React.FC<MindMapProps> = ({ swipeHistory }) => {
 
       {/* Zoom indicator */}
       <div className="absolute bottom-4 right-4 z-10 bg-white shadow-lg rounded-lg px-3 py-2">
-        <span className="text-xs text-gray-600">Zoom: {Math.round(zoom * 100)}%</span>
+        <span className="text-xs text-gray-600">{likedSwipes.length} interests • Zoom: {Math.round(zoom * 100)}%</span>
       </div>
 
       {/* SVG */}
@@ -277,11 +277,9 @@ export const MindMap: React.FC<MindMapProps> = ({ swipeHistory }) => {
             <h2 className="text-lg font-bold text-gray-900 mb-3">{selectedNode.title}</h2>
             <div className="flex items-center gap-2">
               <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                selectedNode.sentiment === 'liked' 
-                  ? 'bg-green-100 text-green-800' 
-                  : 'bg-red-100 text-red-800'
+                'bg-green-100 text-green-800'
               }`}>
-                {selectedNode.sentiment === 'liked' ? 'Liked' : 'Disliked'}
+                Interest
               </span>
             </div>
           </div>
