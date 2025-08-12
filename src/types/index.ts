@@ -1,3 +1,4 @@
+/*   bolt interface
 export interface NewsArticle {
   id: string;
   title: string;
@@ -7,6 +8,26 @@ export interface NewsArticle {
   imageUrl: string;
   source: string;
   publishedAt: string;
+}
+*/
+
+// my interface
+export interface NewsArticle {
+  id: string;
+  title: string;
+  url: string;
+  source: string;
+  imageUrl?: string | null;
+  description?: string;
+  publishedAt?: string | null;
+
+  // provided by AI API
+  summary?: string;
+  bullets?:string[];
+
+  // backwards compatibility with old mock data
+  category?: string;
+  region?: string;
 }
 
 export interface UserPreferences {

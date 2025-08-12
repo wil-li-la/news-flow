@@ -56,13 +56,17 @@ export const SwipeableCard: React.FC<SwipeableCardProps> = ({ article, onSwipe, 
   const opacity = isDragging ? Math.max(0.7, 1 - Math.abs(dragOffset.x) * 0.002) : 1;
   const scale = isActive ? 1 : 0.95;
 
-  const formatDate = (dateString: string) => {
+  // updated to be safer
+  const formatDate = (dateString?: string | null) => {
+    if (!dateString) return '';
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
+    return isNaN(date.getTime())
+      ? ''
+      : date.toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
     });
   };
 
@@ -85,15 +89,22 @@ export const SwipeableCard: React.FC<SwipeableCardProps> = ({ article, onSwipe, 
       <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden h-full max-w-sm mx-auto">
         {/* Image */}
         <div className="relative h-48 overflow-hidden">
-          <img
-            src={article.imageUrl}
-            alt={article.title}
-            className="w-full h-full object-cover"
-            draggable={false}
-          />
-          <div className="absolute top-3 left-3 bg-black/20 backdrop-blur-sm rounded-full px-3 py-1">
-            <span className="text-white text-sm font-medium">{article.category}</span>
-          </div>
+          {article.imageUrl ? (
+            <img
+              src={article.imageUrl}
+              alt={article.title}
+              className="w-full h-full object-cover"
+              draggable={false} />
+          ) : (
+            <div className="w-full h-full bg-gray-100" />
+          )}
+
+          {article.category && (
+            <div className="absolute top-3 left-3 bg-black/20 backdrop-blur-sm rounded-full px-3 py-1">
+              <span className="text-white text-sm font-medium">{article.category}</span>
+            </div>
+          )}
+          
           {dragOffset.x > 50 && (
             <div className="absolute inset-0 bg-green-500/30 flex items-center justify-center">
               <Heart className="w-16 h-16 text-white" fill="currentColor" />
@@ -107,19 +118,31 @@ export const SwipeableCard: React.FC<SwipeableCardProps> = ({ article, onSwipe, 
         </div>
 
         {/* Content */}
-        <div className="p-6 space-y-4">
+        <div className="p-6 pb-28 space-y-4">
           <h2 className="text-xl font-bold text-gray-900 leading-tight line-clamp-2">
             {article.title}
           </h2>
           
           <p className="text-gray-600 text-sm leading-relaxed line-clamp-4">
-            {article.summary}
+            {article.summary ?? article.description ?? ''}
           </p>
+
+          {Array.isArray(article.bullets) && article.bullets.length > 0 && (
+            <ul className="mt-2 list-disc list-inside text-sm text-gray-600 space-y-1">
+              {article.bullets.slice(0, 4).map((b, i) => (
+                <li key={i}>{b}</li>
+              ))}
+            </ul>
+          )}
 
           <div className="flex items-center justify-between text-xs text-gray-500">
             <div className="flex items-center gap-1">
-              <MapPin className="w-3 h-3" />
-              <span>{article.region}</span>
+              {article.region && (
+                <>
+                  <MapPin className="w-3 h-3" />
+                  <span>{article.region}</span>
+                </>
+              )}
             </div>
             <div className="flex items-center gap-1">
               <Clock className="w-3 h-3" />
