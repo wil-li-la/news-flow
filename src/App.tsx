@@ -6,7 +6,8 @@ import { MindMap } from './components/MindMap';
 import { KnowledgeOrganization } from './components/KnowledgeOrganization';
 import { usePreferences } from './hooks/usePreferences';
 import { useSwipeHistory } from './hooks/useSwipeHistory';
-import { mockNews, getPersonalizedNews, getRandomNews } from './data/mockNews';
+// Commented out mock data
+// import { mockNews, getPersonalizedNews, getRandomNews } from './data/mockNews';
 import { NewsArticle, SwipeAction } from './types';
 
 function App() {
@@ -20,6 +21,7 @@ function App() {
   const [stats, setStats] = useState({ liked: 0, passed: 0 });
   const [currentView, setCurrentView] = useState<'news' | 'mindmap' | 'knowledge'>('news');
 
+  /*   Old mock data loading function
   const loadNewArticles = () => {
     setIsLoading(true);
     
@@ -51,10 +53,64 @@ function App() {
       setIsLoading(false);
     }, 800);
   };
+  */
+
+  const loadNewArticles = async () => {
+    setIsLoading(true);
+    try {
+      const seen = encodeURIComponent(seenArticleIds.join(','));
+      const res = await fetch(`/api/news?limit=5&seen=${seen}`);
+      const data: NewsArticle[] = await res.json();
+      setCurrentArticles(data);
+      setCurrentIndex(0);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
     loadNewArticles();
   }, [preferences.personalizedRatio]);
+
+  // new effect
+  useEffect(() => {
+    let cancelled = false;
+
+    const toSummarize = currentArticles.filter(
+      a => !a.summary && a.description && a.description.length > 0
+    );
+    if (toSummarize.length === 0) return;
+
+    (async () => {
+      const results = await Promise.allSettled(
+        toSummarize.map(async a => {
+          const res = await fetch('/api/summarize', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ title: a.title, text: a.description, maxWords: 120 }),
+          });
+          if (!res.ok) return { id: a.id };
+          const j = await res.json();
+          return { id: a.id, summary: j.summary, bullets: j.bullets };
+        })
+      );
+
+      if (cancelled) return;
+
+      const byId = new Map<string, { summary?: string; bullets?: string[] }>();
+      results.forEach((r, i) => {
+        const id = toSummarize[i].id;
+        if (r.status === 'fulfilled' && r.value?.summary) byId.set(id, r.value);
+      });
+      if (!byId.size) return;
+
+      setCurrentArticles(prev =>
+        prev.map(a => (byId.has(a.id) ? { ...a, ...byId.get(a.id)! } : a))
+      );
+    })();
+
+    return () => { cancelled = true; };
+  }, [currentArticles]);
 
   const handleSwipe = (swipeAction: SwipeAction) => {
     updatePreferences(swipeAction);
@@ -195,7 +251,7 @@ function App() {
 
       {/* Main Content */}
       <main className="max-w-sm mx-auto px-4 pb-8">
-        <div className="relative h-[600px]">
+        <div className="relative h-[600px] sm:h-[760px]">
           {isLoading ? (
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="bg-white rounded-2xl shadow-xl border border-gray-100 w-full h-full max-w-sm mx-auto flex items-center justify-center">
