@@ -3,6 +3,7 @@ import { Search, Clock, X, TrendingUp } from 'lucide-react';
 import { NewsArticle, SearchResult } from '../types';
 import { searchNews } from '../data/mockNews';
 import { useSearchHistory } from '../hooks/useSearchHistory';
+import { mockNews } from '../data/mockNews';
 
 interface SearchInterfaceProps {
   onSearchResults: (results: NewsArticle[], query: string) => void;
@@ -41,23 +42,51 @@ export const SearchInterface: React.FC<SearchInterfaceProps> = ({ onSearchResult
     if (!searchQuery.trim()) return;
 
     setIsSearching(true);
-    
-    // Simulate search delay for better UX
-    setTimeout(() => {
-      const results = searchNews(searchQuery);
-      
-      // Add to search history
-      const searchResult: SearchResult = {
-        id: `search-${Date.now()}`,
-        query: searchQuery,
-        articles: results,
-        timestamp: new Date().toISOString()
-      };
-      addSearchResult(searchResult);
-      
-      onSearchResults(results, searchQuery);
+    try {
+      try {
+        const response = await fetch(`/api/news/search?q=${encodeURIComponent(searchQuery)}&limit=20`);
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const results: NewsArticle[] = await response.json();
+        
+        // Add to search history
+        const searchResult: SearchResult = {
+          id: `search-${Date.now()}`,
+          query: searchQuery,
+          articles: results,
+          timestamp: new Date().toISOString()
+        };
+        addSearchResult(searchResult);
+        
+        onSearchResults(results, searchQuery);
+      } catch (apiError) {
+        console.warn('Search API unavailable, using mock results:', apiError);
+        // Fallback to mock search results
+        const mockResults = mockNews.filter(article => 
+          article.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          article.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          article.category.toLowerCase().includes(searchQuery.toLowerCase())
+        ).slice(0, 20);
+        
+        // Add to search history
+        const searchResult: SearchResult = {
+          id: `search-${Date.now()}`,
+          query: searchQuery,
+          articles: mockResults,
+          timestamp: new Date().toISOString()
+        };
+        addSearchResult(searchResult);
+        
+        onSearchResults(mockResults, searchQuery);
+      }
+    } catch (error) {
+      console.error('Search failed:', error);
+    } finally {
       setIsSearching(false);
-    }, 500);
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
