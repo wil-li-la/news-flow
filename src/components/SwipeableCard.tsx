@@ -86,9 +86,9 @@ export const SwipeableCard: React.FC<SwipeableCardProps> = ({ article, onSwipe, 
       onTouchMove={(e) => handleMove(e.touches[0].clientX, e.touches[0].clientY)}
       onTouchEnd={handleEnd}
     >
-      <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden h-full max-w-sm mx-auto">
+      <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden h-full max-w-sm mx-auto max-h-[500px]">
         {/* Image */}
-        <div className="relative h-48 overflow-hidden">
+        <div className="relative h-32 overflow-hidden">
           {article.imageUrl ? (
             <img
               src={article.imageUrl}
@@ -118,18 +118,18 @@ export const SwipeableCard: React.FC<SwipeableCardProps> = ({ article, onSwipe, 
         </div>
 
         {/* Content */}
-        <div className="p-6 pb-28 space-y-4">
-          <h2 className="text-xl font-bold text-gray-900 leading-tight line-clamp-2">
+        <div className="p-4 pb-20 space-y-3">
+          <h2 className="text-lg font-bold text-gray-900 leading-tight line-clamp-2">
             {article.title}
           </h2>
           
-          <p className="text-gray-600 text-sm leading-relaxed line-clamp-4">
+          <p className="text-gray-600 text-sm leading-relaxed line-clamp-3">
             {article.summary ?? article.description ?? ''}
           </p>
 
           {Array.isArray(article.bullets) && article.bullets.length > 0 && (
-            <ul className="mt-2 list-disc list-inside text-sm text-gray-600 space-y-1">
-              {article.bullets.slice(0, 4).map((b, i) => (
+            <ul className="mt-2 list-disc list-inside text-xs text-gray-600 space-y-0.5">
+              {article.bullets.slice(0, 2).map((b, i) => (
                 <li key={i}>{b}</li>
               ))}
             </ul>
@@ -156,20 +156,20 @@ export const SwipeableCard: React.FC<SwipeableCardProps> = ({ article, onSwipe, 
         </div>
 
         {/* Action Buttons */}
-        <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 flex gap-6">
+        <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-4">
           <button
             onClick={handleDislike}
-            className="w-14 h-14 bg-red-500 hover:bg-red-600 text-white rounded-full shadow-lg transition-all duration-200 hover:scale-110 flex items-center justify-center"
+            className="w-12 h-12 bg-red-500 hover:bg-red-600 text-white rounded-full shadow-lg transition-all duration-200 hover:scale-110 flex items-center justify-center"
             disabled={!isActive}
           >
-            <X className="w-6 h-6" strokeWidth={2.5} />
+            <X className="w-5 h-5" strokeWidth={2.5} />
           </button>
           <button
             onClick={handleLike}
-            className="w-14 h-14 bg-green-500 hover:bg-green-600 text-white rounded-full shadow-lg transition-all duration-200 hover:scale-110 flex items-center justify-center"
+            className="w-12 h-12 bg-green-500 hover:bg-green-600 text-white rounded-full shadow-lg transition-all duration-200 hover:scale-110 flex items-center justify-center"
             disabled={!isActive}
           >
-            <Heart className="w-6 h-6" fill="currentColor" />
+            <Heart className="w-5 h-5" fill="currentColor" />
           </button>
         </div>
       </div>
