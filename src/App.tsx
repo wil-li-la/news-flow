@@ -8,6 +8,7 @@ import { SearchInterface } from './components/SearchInterface';
 import { SearchResults } from './components/SearchResults';
 import { usePreferences } from './hooks/usePreferences';
 import { useSwipeHistory } from './hooks/useSwipeHistory';
+import { getPersonalizedNews, getRandomNews } from './data/mockNews';
 
 import { NewsArticle, SwipeAction } from './types';
 
@@ -62,11 +63,44 @@ function App() {
   const loadNewArticles = async () => {
     setIsLoading(true);
     try {
-      const seen = encodeURIComponent(seenArticleIds.join(','));
-      const res = await fetch(`/api/news?limit=5&seen=${seen}`);
-      const data: NewsArticle[] = await res.json();
-      setCurrentArticles(data);
-      setCurrentIndex(0);
+      // Try to fetch from API first, fallback to mock data if API is unavailable
+      try {
+        const seen = encodeURIComponent(seenArticleIds.join(','));
+        const res = await fetch(`/api/news?limit=5&seen=${seen}`);
+        
+        if (!res.ok) {
+          throw new Error(`HTTP error! status: ${res.status}`);
+        }
+        
+        const data: NewsArticle[] = await res.json();
+        setCurrentArticles(data);
+        setCurrentIndex(0);
+      } catch (apiError) {
+        console.warn('API unavailable, using mock data:', apiError);
+        // Fallback to mock data when API is not available
+        const personalizedCount = Math.round(5 * preferences.personalizedRatio);
+        const randomCount = 5 - personalizedCount;
+
+        let newArticles: NewsArticle[] = [];
+
+        if (personalizedCount > 0) {
+          const personalized = getPersonalizedNews(preferences, seenArticleIds).slice(0, personalizedCount);
+          newArticles.push(...personalized);
+        }
+
+        if (randomCount > 0) {
+          const availableRandom = getRandomNews([...seenArticleIds, ...newArticles.map(a => a.id)]);
+          const randomArticles = availableRandom
+            .sort(() => Math.random() - 0.5)
+            .slice(0, randomCount);
+          newArticles.push(...randomArticles);
+        }
+
+        // Shuffle the final array
+        newArticles = newArticles.sort(() => Math.random() - 0.5);
+        setCurrentArticles(newArticles);
+        setCurrentIndex(0);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -86,31 +120,40 @@ function App() {
     if (toSummarize.length === 0) return;
 
     (async () => {
-      const results = await Promise.allSettled(
-        toSummarize.map(async a => {
-          const res = await fetch('/api/summarize', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ title: a.title, text: a.description, maxWords: 120 }),
-          });
-          if (!res.ok) return { id: a.id };
-          const j = await res.json();
-          return { id: a.id, summary: j.summary, bullets: j.bullets };
-        })
-      );
+      try {
+        const results = await Promise.allSettled(
+          toSummarize.map(async a => {
+            try {
+              const res = await fetch('/api/summarize', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ title: a.title, text: a.description, maxWords: 120 }),
+              });
+              if (!res.ok) return { id: a.id };
+              const j = await res.json();
+              return { id: a.id, summary: j.summary, bullets: j.bullets };
+            } catch (error) {
+              console.warn(`Failed to summarize article ${a.id}:`, error);
+              return { id: a.id };
+            }
+          })
+        );
 
-      if (cancelled) return;
+        if (cancelled) return;
 
-      const byId = new Map<string, { summary?: string; bullets?: string[] }>();
-      results.forEach((r, i) => {
-        const id = toSummarize[i].id;
-        if (r.status === 'fulfilled' && r.value?.summary) byId.set(id, r.value);
-      });
-      if (!byId.size) return;
+        const byId = new Map<string, { summary?: string; bullets?: string[] }>();
+        results.forEach((r, i) => {
+          const id = toSummarize[i].id;
+          if (r.status === 'fulfilled' && r.value?.summary) byId.set(id, r.value);
+        });
+        if (!byId.size) return;
 
-      setCurrentArticles(prev =>
-        prev.map(a => (byId.has(a.id) ? { ...a, ...byId.get(a.id)! } : a))
-      );
+        setCurrentArticles(prev =>
+          prev.map(a => (byId.has(a.id) ? { ...a, ...byId.get(a.id)! } : a))
+        );
+      } catch (error) {
+        console.warn('Summarization service unavailable:', error);
+      }
     })();
 
     return () => { cancelled = true; };
