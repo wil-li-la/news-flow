@@ -2,7 +2,15 @@ import Parser from 'rss-parser';
 
 const parser = new Parser({
     // rss-parser will pick up media: content, content:encoded, etc. when present
-    timeout: 10000
+    timeout: 10000,
+
+    customFields: {
+        item: [
+            ['media:content', 'mediaContent', { keepArray: true }],
+            ['media:thumbnail', 'mediaThumbnail', { keepArray: true }],
+            ['content:encoded', 'contentEncoded'],
+        ],
+    },
 });
 
 // crawling the web faces legal issues
@@ -19,22 +27,67 @@ const FEEDS = [
 let cache = { items: [], lastFetched: 0 };
 const CACHE_MS = 1000 * 60 * 5; // 5 minutes
 
-function pickImage(entry) {
-    const media = entry.enclosure?.url || entry['media: content']?.url;
-    const thumb = entry['media: thumbnail']?.url;
-    return media || thumb || null;
+// function pickImage(entry) {
+//     const media = entry.enclosure?.url || entry['media: content']?.url;
+//     const thumb = entry['media: thumbnail']?.url;
+//     return media || thumb || null;
+// }
+
+function absoluteUrl(u, base) { try { return new URL(u, base).href; } catch { return null; } }
+
+function firstImgFromHtml(html) {
+    if (!html) return null;
+    let m = html.match(/<img[^>]+src=["']([^"']+)["']/i);
+    if (m?.[1]) return m[1];
+    m = html.match(/<img[^>]+(?:data-src|data-original)=["']([^"']+)["']/i);
+    if (m?.[1]) return m[1];
+    m = html.match(/<img[^>]+srcset=["']([^"']+)["']/i);
+    if (m?.[1]) return m[1].split(',')[0].trim().split(' ')[0];
+    return null;
 }
 
-function normalizeEntry(entry, sourceTitle) {
-    return {
-        id: entry.guid || entry.id || entry.link,
-        title: entry.title?.trim() || '(unlisted)',
-        url: entry.link,
-        source: sourceTitle || new URL(entry.link).hostname,
-        description: (entry.contentSnippet || entry.summary || '').trim(),
-        imageUrl: pickImage(entry),
-        publishedAt: entry.isoDate || entry.pubDate || null
-    };
+function pickImage(entry, feedUrl) {
+    if (entry.enclosure?.url) return absoluteUrl(entry.enclosure.url, feedUrl);
+
+    const mc = Array.isArray(entry.mediaContent) ? entry.mediaContent : (entry.mediaContent ? [entry.mediaContent] : []);
+    for (const item of mc) {
+        const url = item?.$?.url || item?.url;
+        if (url) return absoluteUrl(url, feedUrl);
+    }
+
+    const mt = Array.isArray(entry.mediaThumbnail) ? entry.mediaThumbnail : (entry.mediaThumbnail ? [entry.mediaThumbnail] : []);
+    if (mt.length) {
+        const best = mt
+            .map(t => ({ url: t?.$?.url || t?.url, w: parseInt(t?.$?.width || t?.width || '0', 10) || 0}))
+            .filter(x => x.url)
+            .sort((a, b) => b.w - a.w)[0];
+        if (best?.url) return absoluteUrl(best.url, feedUrl);
+    }
+
+    const htmlImg =
+        firstImgFromHtml(entry.contentEncoded) ||
+        firstImgFromHtml(entry['content:encoded']) ||
+        firstImgFromHtml(entry.content);
+    if (htmlImg) return absoluteUrl(htmlImg, feedUrl);
+
+    return null;
+}
+
+function normalizeEntry(entry, sourceTitle, feedUrl) {
+  return {
+    id: entry.guid || entry.id || entry.link,
+    title: entry.title?.trim() || '(unlisted)',
+    url: entry.link || null,
+    source: sourceTitle || (entry.link ? new URL(entry.link).hostname : new URL(feedUrl).hostname),
+    description: (
+      entry.contentSnippet ||
+      entry.summary ||
+      stripHtml(entry.contentEncoded || entry.content) ||
+      ''
+    ).trim(),
+    imageUrl: pickImage(entry, feedUrl),
+    publishedAt: entry.isoDate || entry.pubDate || null,
+  };
 }
 
 function dedupeByUrl(items) {
