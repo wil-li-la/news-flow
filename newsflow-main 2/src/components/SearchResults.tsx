@@ -16,6 +16,7 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
   onArticleSelect 
 }) => {
   const formatDate = (dateString: string) => {
+    if (!dateString) return '';
     return new Date(dateString).toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric',
@@ -66,33 +67,45 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
                 className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-all cursor-pointer group"
               >
                 <div className="flex gap-4">
-                  <img
-                    src={article.imageUrl}
-                    alt={article.title}
-                    className="w-32 h-24 rounded-lg object-cover flex-shrink-0"
-                  />
+                  {article.imageUrl ? (
+                    <img
+                      src={article.imageUrl}
+                      alt={article.title}
+                      className="w-32 h-24 rounded-lg object-cover flex-shrink-0"
+                    />
+                  ) : (
+                    <div className="w-32 h-24 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0">
+                      <span className="text-xs text-gray-400">No Image</span>
+                    </div>
+                  )}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between mb-2">
                       <h2 className="text-lg font-semibold text-gray-900 group-hover:text-blue-600 transition-colors line-clamp-2">
                         {article.title}
                       </h2>
-                      <span className="px-2 py-1 bg-gray-100 text-gray-600 rounded-md text-xs ml-2 flex-shrink-0">
-                        {article.category}
-                      </span>
+                      {article.category && (
+                        <span className="px-2 py-1 bg-gray-100 text-gray-600 rounded-md text-xs ml-2 flex-shrink-0">
+                          {article.category}
+                        </span>
+                      )}
                     </div>
                     <p className="text-gray-600 text-sm line-clamp-3 mb-4">
-                      {article.summary}
+                      {article.summary || article.description}
                     </p>
                     <div className="flex items-center justify-between text-xs text-gray-500">
                       <div className="flex items-center gap-4">
-                        <div className="flex items-center gap-1">
-                          <MapPin className="w-3 h-3" />
-                          <span>{article.region}</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Clock className="w-3 h-3" />
-                          <span>{formatDate(article.publishedAt)}</span>
-                        </div>
+                        {article.region && (
+                          <div className="flex items-center gap-1">
+                            <MapPin className="w-3 h-3" />
+                            <span>{article.region}</span>
+                          </div>
+                        )}
+                        {article.publishedAt && (
+                          <div className="flex items-center gap-1">
+                            <Clock className="w-3 h-3" />
+                            <span>{formatDate(article.publishedAt)}</span>
+                          </div>
+                        )}
                       </div>
                       <span className="font-medium">{article.source}</span>
                     </div>
