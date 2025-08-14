@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { ArrowLeft, BookOpen, TrendingUp, Clock, Tag, Users, ChevronRight, Calendar, Star } from 'lucide-react';
+import { ArrowLeft, BookOpen, Users, ChevronRight, Calendar, Star } from 'lucide-react';
 import { SwipeAction, KeywordCluster, KnowledgeSeries } from '../types';
 import { generateKeywordClusters, generateKnowledgeSeries } from '../utils/knowledgeUtils';
 
@@ -12,7 +12,6 @@ export const KnowledgeOrganization: React.FC<KnowledgeOrganizationProps> = ({
   swipeHistory, 
   onBack 
 }) => {
-  const [activeTab, setActiveTab] = useState<'clusters' | 'series'>('clusters');
   const [selectedCluster, setSelectedCluster] = useState<KeywordCluster | null>(null);
   const [selectedSeries, setSelectedSeries] = useState<KnowledgeSeries | null>(null);
 
@@ -36,10 +35,10 @@ export const KnowledgeOrganization: React.FC<KnowledgeOrganizationProps> = ({
   }, [liked])
 
   // same function, now use normalized objects
-  const { clusters, series } = useMemo(() => {
+  const { series } = useMemo(() => {
     const clusters = generateKeywordClusters(normalized);
     const series = generateKnowledgeSeries(clusters);
-    return { clusters, series };
+    return { series };
   }, [normalized]);
 
   const getSentimentColor = (sentiment: 'positive' | 'negative' | 'mixed') => {
@@ -280,7 +279,7 @@ export const KnowledgeOrganization: React.FC<KnowledgeOrganizationProps> = ({
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50">
       <header className="bg-white/80 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-30">
         <div className="max-w-4xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
             <div className="flex items-center gap-3">
               <button
                 onClick={onBack}
@@ -293,157 +292,68 @@ export const KnowledgeOrganization: React.FC<KnowledgeOrganizationProps> = ({
                 <p className="text-sm text-gray-600">Organize your news insights</p>
               </div>
             </div>
-            
-            {/* Tab Switcher */}
-            <div className="flex bg-gray-100 rounded-lg p-1">
-              <button
-                onClick={() => setActiveTab('clusters')}
-                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                  activeTab === 'clusters'
-                    ? 'bg-white text-gray-900 shadow-sm'
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                Keywords
-              </button>
-              <button
-                onClick={() => setActiveTab('series')}
-                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                  activeTab === 'series'
-                    ? 'bg-white text-gray-900 shadow-sm'
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                Series
-              </button>
-            </div>
           </div>
         </div>
       </header>
 
       <main className="max-w-4xl mx-auto px-4 py-6">
-        {activeTab === 'clusters' ? (
-          <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-gray-900">Keyword Clusters</h2>
-              <span className="text-sm text-gray-600">{clusters.length} clusters found</span>
-            </div>
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold text-gray-900">Knowledge Series</h2>
+            <span className="text-sm text-gray-600">{series.length} series found</span>
+          </div>
 
-            {clusters.length === 0 ? (
-              <div className="text-center py-12">
-                <Tag className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">No Clusters Yet</h3>
-                <p className="text-gray-600">Swipe on more articles to generate keyword clusters</p>
-              </div>
-            ) : (
-              <div className="grid gap-4">
-                {clusters.map(cluster => (
-                  <div
-                    key={cluster.id}
-                    onClick={() => setSelectedCluster(cluster)}
-                    className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-all cursor-pointer group"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <h3 className="text-lg font-semibold text-gray-900 capitalize group-hover:text-indigo-600 transition-colors">
-                            {cluster.keyword}
-                          </h3>
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${getSentimentColor(cluster.sentiment)}`}>
-                            {cluster.sentiment}
+          {series.length === 0 ? (
+            <div className="text-center py-12">
+              <BookOpen className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">No Series Yet</h3>
+              <p className="text-gray-600">Swipe on more related articles to generate knowledge series</p>
+            </div>
+          ) : (
+            <div className="grid gap-6">
+              {series.map(seriesItem => (
+                <div
+                  key={seriesItem.id}
+                  onClick={() => setSelectedSeries(seriesItem)}
+                  className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-all cursor-pointer group"
+                >
+                  <div className="flex gap-4">
+                    <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                      <BookOpen className="w-6 h-6 text-purple-600" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between mb-2">
+                        <h3 className="text-lg font-semibold text-gray-900 group-hover:text-purple-600 transition-colors">
+                          {seriesItem.title}
+                        </h3>
+                        <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-purple-600 transition-colors flex-shrink-0 ml-2" />
+                      </div>
+                      <p className="text-gray-600 text-sm mb-3 line-clamp-2">{seriesItem.description}</p>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-4 text-sm text-gray-500">
+                          <div className="flex items-center gap-1">
+                            <Users className="w-4 h-4" />
+                            <span>{seriesItem.articles.length} articles</span>
+                          </div>
+                          <span className="px-2 py-1 bg-gray-100 text-gray-600 rounded-md text-xs">
+                            {seriesItem.category}
                           </span>
                         </div>
-                        <div className="flex items-center gap-4 text-sm text-gray-600">
-                          <div className="flex items-center gap-1">
-                            <TrendingUp className="w-4 h-4" />
-                            <span>{cluster.frequency} articles</span>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <Clock className="w-4 h-4" />
-                            <span>Updated {formatDate(cluster.lastUpdated)}</span>
-                          </div>
-                        </div>
-                        {cluster.relatedKeywords.length > 0 && (
-                          <div className="mt-3 flex flex-wrap gap-1">
-                            {cluster.relatedKeywords.slice(0, 3).map(keyword => (
-                              <span key={keyword} className="px-2 py-1 bg-gray-100 text-gray-600 rounded-md text-xs">
-                                {keyword}
-                              </span>
-                            ))}
-                            {cluster.relatedKeywords.length > 3 && (
-                              <span className="px-2 py-1 bg-gray-100 text-gray-600 rounded-md text-xs">
-                                +{cluster.relatedKeywords.length - 3} more
-                              </span>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                      <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-indigo-600 transition-colors" />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        ) : (
-          <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-gray-900">Knowledge Series</h2>
-              <span className="text-sm text-gray-600">{series.length} series found</span>
-            </div>
-
-            {series.length === 0 ? (
-              <div className="text-center py-12">
-                <BookOpen className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">No Series Yet</h3>
-                <p className="text-gray-600">Swipe on more related articles to generate knowledge series</p>
-              </div>
-            ) : (
-              <div className="grid gap-6">
-                {series.map(seriesItem => (
-                  <div
-                    key={seriesItem.id}
-                    onClick={() => setSelectedSeries(seriesItem)}
-                    className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-all cursor-pointer group"
-                  >
-                    <div className="flex gap-4">
-                      <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center flex-shrink-0">
-                        <BookOpen className="w-6 h-6 text-purple-600" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-start justify-between mb-2">
-                          <h3 className="text-lg font-semibold text-gray-900 group-hover:text-purple-600 transition-colors">
-                            {seriesItem.title}
-                          </h3>
-                          <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-purple-600 transition-colors flex-shrink-0 ml-2" />
-                        </div>
-                        <p className="text-gray-600 text-sm mb-3 line-clamp-2">{seriesItem.description}</p>
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-4 text-sm text-gray-500">
-                            <div className="flex items-center gap-1">
-                              <Users className="w-4 h-4" />
-                              <span>{seriesItem.articles.length} articles</span>
-                            </div>
-                            <span className="px-2 py-1 bg-gray-100 text-gray-600 rounded-md text-xs">
-                              {seriesItem.category}
+                        <div className="flex flex-wrap gap-1">
+                          {seriesItem.keywords.slice(0, 2).map(keyword => (
+                            <span key={keyword} className="px-2 py-1 bg-purple-100 text-purple-700 rounded-md text-xs">
+                              {keyword}
                             </span>
-                          </div>
-                          <div className="flex flex-wrap gap-1">
-                            {seriesItem.keywords.slice(0, 2).map(keyword => (
-                              <span key={keyword} className="px-2 py-1 bg-purple-100 text-purple-700 rounded-md text-xs">
-                                {keyword}
-                              </span>
-                            ))}
-                          </div>
+                          ))}
                         </div>
                       </div>
                     </div>
                   </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </main>
     </div>
   );

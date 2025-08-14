@@ -1,9 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Search, Clock, X, TrendingUp } from 'lucide-react';
 import { NewsArticle, SearchResult } from '../types';
-import { searchNews } from '../data/mockNews';
+import { searchNews, extendedMockNews } from '../data/mockNews';
 import { useSearchHistory } from '../hooks/useSearchHistory';
-import { mockNews } from '../data/mockNews';
 
 interface SearchInterfaceProps {
   onSearchResults: (results: NewsArticle[], query: string) => void;
@@ -65,11 +64,15 @@ export const SearchInterface: React.FC<SearchInterfaceProps> = ({ onSearchResult
       } catch (apiError) {
         console.warn('Search API unavailable, using mock results:', apiError);
         // Fallback to mock search results
-        const mockResults = mockNews.filter(article => 
+        const mockResults = searchNews(searchQuery, 20);
+        
+        /* Old simple filter - replaced with tag-based search
+        const mockResults = extendedMockNews.filter(article => 
           article.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          article.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          (article.description || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
           article.category.toLowerCase().includes(searchQuery.toLowerCase())
         ).slice(0, 20);
+        */
         
         // Add to search history
         const searchResult: SearchResult = {

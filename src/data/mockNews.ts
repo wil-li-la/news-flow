@@ -225,7 +225,7 @@ export const searchNews = (query: string, limit: number = 10): NewsArticle[] => 
 };
 
 const calculateRelevanceScore = (article: NewsArticle, searchTerms: string[]): number => {
-  const text = `${article.title} ${article.summary}`.toLowerCase();
+  const text = `${article.title} ${article.summary || article.description || ''} ${article.category || ''} ${article.region || ''}`.toLowerCase();
   return searchTerms.reduce((score, term) => {
     return score + (text.includes(term) ? 1 : 0);
   }, 0);
