@@ -1,8 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import * as d3 from 'd3';
 import { MindMapNode, MindMapLink, SwipeAction } from '../types';
-import { generateMindMapData, getCategoryColor, getLinkColor } from '../utils/mindMapUtils';
-import { ZoomIn, ZoomOut, RotateCcw, Info } from 'lucide-react';
+import { generateMindMapData, getCategoryColor, getRegionColor, getLinkColor, MindMapViewMode } from '../utils/mindMapUtils';
+import { ZoomIn, ZoomOut, RotateCcw, Info, Brain, Building2, Globe } from 'lucide-react';
 
 interface MindMapProps {
   swipeHistory: SwipeAction[];
@@ -12,7 +12,7 @@ export const MindMap: React.FC<MindMapProps> = ({ swipeHistory }) => {
   const svgRef = useRef<SVGSVGElement>(null);
   const [selectedNode, setSelectedNode] = useState<MindMapNode | null>(null);
   const [zoom, setZoom] = useState(1);
-  const [viewMode, setViewMode] = useState<'keywords' | 'articles'>('keywords');
+  const [viewMode, setViewMode] = useState<MindMapViewMode>('semantic');
   
   // Filter to only liked articles
   const likedSwipes = swipeHistory.filter(swipe => swipe.direction === 'right');
@@ -25,7 +25,7 @@ export const MindMap: React.FC<MindMapProps> = ({ swipeHistory }) => {
 
     const width = 800;
     const height = 600;
-    const { nodes, links } = generateMindMapData(swipeHistory);
+    const { nodes, links } = generateMindMapData(swipeHistory, viewMode);
 
     if (nodes.length === 0) return;
 
@@ -56,9 +56,14 @@ export const MindMap: React.FC<MindMapProps> = ({ swipeHistory }) => {
       .selectAll('line')
       .data(links)
       .enter().append('line')
-      .attr('stroke', d => getLinkColor(d.type))
-      .attr('stroke-opacity', d => 0.3 + d.strength * 0.7)
-      .attr('stroke-width', d => 1 + d.strength * 3);
+      .attr('stroke', d => {
+        const baseColor = getLinkColor(d.type);
+        const opacity = 0.3 + d.strength * 0.7;
+        return baseColor;
+      })
+      .attr('stroke-opacity', d => Math.max(0.2, 0.3 + d.strength * 0.7))
+      .attr('stroke-width', d => Math.max(1, 1 + d.strength * 4))
+      .style('filter', d => d.strength > 0.7 ? 'drop-shadow(0px 0px 3px rgba(59, 130, 246, 0.6))' : 'none');
 
     // Create nodes
     const node = container.append('g')
@@ -85,15 +90,22 @@ export const MindMap: React.FC<MindMapProps> = ({ swipeHistory }) => {
 
     // Add circles to nodes
     node.append('circle')
-      .attr('r', 20)
-      .attr('fill', d => getCategoryColor(d.category))
+      .attr('r', d => {
+        const baseSize = 20;
+        const sizeMultiplier = d.articleCount ? Math.min(2, 1 + (d.articleCount - 1) * 0.2) : 1;
+        return baseSize * sizeMultiplier;
+      })
+      .attr('fill', d => viewMode === 'region' ? getRegionColor(d.region) : getCategoryColor(d.category))
       .attr('stroke', d => d.sentiment === 'liked' ? '#10B981' : '#EF4444')
       .attr('stroke-width', 3)
       .attr('opacity', 0.8);
 
     // Add labels
     node.append('text')
-      .text(d => d.title.length > 20 ? d.title.substring(0, 20) + '...' : d.title)
+      .text(d => {
+        const maxLength = viewMode === 'semantic' ? 15 : 12;
+        return d.title.length > maxLength ? d.title.substring(0, maxLength) + '...' : d.title;
+      })
       .attr('x', 0)
       .attr('y', 35)
       .attr('text-anchor', 'middle')
@@ -103,7 +115,12 @@ export const MindMap: React.FC<MindMapProps> = ({ swipeHistory }) => {
 
     // Add category labels
     node.append('text')
-      .text(d => d.category)
+      .text(d => {
+        if (viewMode === 'semantic') return d.category;
+        if (viewMode === 'category') return `${d.articleCount || 0} articles`;
+        if (viewMode === 'region') return `${d.articleCount || 0} articles`;
+        return '';
+      })
       .attr('x', 0)
       .attr('y', -30)
       .attr('text-anchor', 'middle')
@@ -118,17 +135,21 @@ export const MindMap: React.FC<MindMapProps> = ({ swipeHistory }) => {
 
     // Add hover effects
     node.on('mouseenter', function(event, d) {
+      const currentRadius = d3.select(this).select('circle').attr('r');
       d3.select(this).select('circle')
         .transition()
         .duration(200)
-        .attr('r', 25)
+        .attr('r', parseFloat(currentRadius) + 5)
         .attr('opacity', 1);
     })
     .on('mouseleave', function(event, d) {
+      const baseSize = 20;
+      const sizeMultiplier = d.articleCount ? Math.min(2, 1 + (d.articleCount - 1) * 0.2) : 1;
+      const originalRadius = baseSize * sizeMultiplier;
       d3.select(this).select('circle')
         .transition()
         .duration(200)
-        .attr('r', 20)
+        .attr('r', originalRadius)
         .attr('opacity', 0.8);
     });
 
@@ -148,6 +169,24 @@ export const MindMap: React.FC<MindMapProps> = ({ swipeHistory }) => {
       simulation.stop();
     };
   }, [swipeHistory, viewMode]);
+
+  const getViewModeIcon = (mode: MindMapViewMode) => {
+    switch (mode) {
+      case 'semantic': return Brain;
+      case 'category': return Building2;
+      case 'region': return Globe;
+      default: return Brain;
+    }
+  };
+
+  const getViewModeLabel = (mode: MindMapViewMode) => {
+    switch (mode) {
+      case 'semantic': return 'Semantic';
+      case 'category': return 'Category';
+      case 'region': return 'Region';
+      default: return 'Semantic';
+    }
+  };
 
   const handleZoomIn = () => {
     if (svgRef.current) {
@@ -192,7 +231,31 @@ export const MindMap: React.FC<MindMapProps> = ({ swipeHistory }) => {
   return (
     <div className="relative w-full h-full bg-white rounded-lg overflow-hidden">
       {/* Controls */}
-      <div className="absolute top-4 right-4 z-10 flex gap-2">
+      <div className="absolute top-4 right-4 z-10 flex flex-col gap-2">
+        {/* View Mode Controls */}
+        <div className="flex gap-1 bg-white shadow-lg rounded-lg p-1">
+          {(['semantic', 'category', 'region'] as MindMapViewMode[]).map((mode) => {
+            const Icon = getViewModeIcon(mode);
+            const isActive = viewMode === mode;
+            return (
+              <button
+                key={mode}
+                onClick={() => setViewMode(mode)}
+                className={`w-8 h-8 rounded-md flex items-center justify-center transition-colors ${
+                  isActive 
+                    ? 'bg-blue-600 text-white' 
+                    : 'text-gray-600 hover:bg-gray-100'
+                }`}
+                title={`${getViewModeLabel(mode)} View`}
+              >
+                <Icon className="w-4 h-4" />
+              </button>
+            );
+          })}
+        </div>
+        
+        {/* Zoom Controls */}
+        <div className="flex gap-2">
         <button
           onClick={handleZoomIn}
           className="w-10 h-10 bg-white shadow-lg rounded-lg flex items-center justify-center hover:bg-gray-50 transition-colors"
@@ -212,27 +275,41 @@ export const MindMap: React.FC<MindMapProps> = ({ swipeHistory }) => {
           <RotateCcw className="w-5 h-5 text-gray-600" />
         </button>
       </div>
+      </div>
 
       {/* Legend */}
       <div className="absolute top-4 left-4 z-10 bg-white shadow-lg rounded-lg p-4 space-y-3">
-        <h4 className="font-semibold text-gray-900 text-sm">Legend</h4>
+        <div className="flex items-center gap-2">
+          <h4 className="font-semibold text-gray-900 text-sm">Legend</h4>
+          <span className="text-xs text-gray-500">({getViewModeLabel(viewMode)} View)</span>
+        </div>
         <div className="space-y-2 text-xs">
           <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded-full border-2 border-green-500 bg-blue-500"></div>
-            <span>Your Interests</span>
+            <div className={`w-4 h-4 rounded-full border-2 border-green-500 ${
+              viewMode === 'region' ? 'bg-red-500' : 'bg-blue-500'
+            }`}></div>
+            <span>
+              {viewMode === 'semantic' && 'Keywords'}
+              {viewMode === 'category' && 'Categories'}
+              {viewMode === 'region' && 'Regions'}
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-1 bg-gray-400 rounded"></div>
+            <span>Weak Connection</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-1 bg-blue-600 rounded" style={{ height: '3px' }}></div>
+            <span>Strong Connection</span>
           </div>
           <div className="space-y-1">
             <div className="flex items-center gap-2">
               <div className="w-4 h-0.5 bg-blue-500"></div>
-              <span>Category Link</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-0.5 bg-green-500"></div>
-              <span>Region Link</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-0.5 bg-purple-500"></div>
-              <span>Semantic Link</span>
+              <span>
+                {viewMode === 'semantic' && 'Semantic'}
+                {viewMode === 'category' && 'Category'}
+                {viewMode === 'region' && 'Regional'}
+              </span>
             </div>
           </div>
         </div>
@@ -240,7 +317,9 @@ export const MindMap: React.FC<MindMapProps> = ({ swipeHistory }) => {
 
       {/* Zoom indicator */}
       <div className="absolute bottom-4 right-4 z-10 bg-white shadow-lg rounded-lg px-3 py-2">
-        <span className="text-xs text-gray-600">{likedSwipes.length} interests • Zoom: {Math.round(zoom * 100)}%</span>
+        <span className="text-xs text-gray-600">
+          {likedSwipes.length} articles • {getViewModeLabel(viewMode)} • {Math.round(zoom * 100)}%
+        </span>
       </div>
 
       {/* SVG */}
@@ -260,11 +339,19 @@ export const MindMap: React.FC<MindMapProps> = ({ swipeHistory }) => {
               <div className="flex items-center gap-3">
                 <div
                   className="w-6 h-6 rounded-full"
-                  style={{ backgroundColor: getCategoryColor(selectedNode.category) }}
+                  style={{ 
+                    backgroundColor: viewMode === 'region' 
+                      ? getRegionColor(selectedNode.region) 
+                      : getCategoryColor(selectedNode.category) 
+                  }}
                 />
                 <div>
-                  <h3 className="font-semibold text-gray-900">{selectedNode.category}</h3>
-                  <p className="text-sm text-gray-600">{selectedNode.region}</p>
+                  <h3 className="font-semibold text-gray-900 capitalize">{selectedNode.title}</h3>
+                  <p className="text-sm text-gray-600">
+                    {viewMode === 'semantic' && `${selectedNode.category} • ${selectedNode.region}`}
+                    {viewMode === 'category' && `${selectedNode.articleCount || 0} articles`}
+                    {viewMode === 'region' && `${selectedNode.articleCount || 0} articles`}
+                  </p>
                 </div>
               </div>
               <button
@@ -274,12 +361,18 @@ export const MindMap: React.FC<MindMapProps> = ({ swipeHistory }) => {
                 ×
               </button>
             </div>
-            <h2 className="text-lg font-bold text-gray-900 mb-3">{selectedNode.title}</h2>
+            <div className="mb-3">
+              <p className="text-sm text-gray-600 mb-2">
+                {getViewModeLabel(viewMode)} View • Node Details
+              </p>
+            </div>
             <div className="flex items-center gap-2">
               <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                 'bg-green-100 text-green-800'
               }`}>
-                Interest
+                {viewMode === 'semantic' && 'Keyword Hub'}
+                {viewMode === 'category' && 'Category Hub'}
+                {viewMode === 'region' && 'Regional Hub'}
               </span>
             </div>
           </div>

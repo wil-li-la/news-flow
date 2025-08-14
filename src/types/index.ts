@@ -50,6 +50,8 @@ export interface MindMapNode {
   category: string;
   region: string;
   sentiment: 'liked' | 'disliked';
+  nodeType?: 'keyword' | 'category' | 'region' | 'article';
+  articleCount?: number;
   x?: number;
   y?: number;
   fx?: number | null;
