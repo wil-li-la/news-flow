@@ -13,6 +13,112 @@ const parser = new Parser({
     },
 });
 
+// --- category/region inference helpers ---
+const CONTINENT_MAP = {
+  usa:'North America', america:'North America', 'u.s.':'North America', canada:'North America', mexico:'North America',
+  uk:'Europe', britain:'Europe', england:'Europe', france:'Europe', germany:'Europe', italy:'Europe', spain:'Europe',
+  russia:'Europe', ukraine:'Europe', poland:'Europe', sweden:'Europe',
+  china:'Asia', india:'Asia', japan:'Asia', korea:'Asia', pakistan:'Asia', taiwan:'Asia', indonesia:'Asia', philippines:'Asia',
+  israel:'Middle East', iran:'Middle East', iraq:'Middle East', syria:'Middle East', lebanon:'Middle East', saudi:'Middle East',
+  egypt:'Africa', nigeria:'Africa', kenya:'Africa', ethiopia:'Africa',
+  brazil:'South America', argentina:'South America', chile:'South America', colombia:'South America', peru:'South America',
+  australia:'Oceania', nz:'Oceania', 'new zealand':'Oceania'
+};
+
+function inferCategory(entry, feedTitle = '', feedUrl = '') {
+  const haystack = [
+    ...(Array.isArray(entry.categories) ? entry.categories : [entry.category]).filter(Boolean),
+    entry.title || '',
+    entry.contentSnippet || '',
+    entry.summary || '',
+    feedTitle || '',
+    entry.link || '',
+    feedUrl || ''
+  ].join(' ').toLowerCase();
+
+  // Quick keyword buckets
+  const tests = [
+    { cat: 'World',       re: /\b(world|international|global|ukraine|gaza|israel|europe|asia|africa|americas)\b/ },
+    { cat: 'Politics',    re: /\b(politics|election|government|parliament|policy|white house|congress|downing street)\b/ },
+    { cat: 'Business',    re: /\b(business|economy|market|company|industry|startup|trade|merger|acquisition)\b/ },
+    { cat: 'Finance',     re: /\b(stocks?|markets?|crypto|bank|banking|interest rates?|inflation|fed|treasury|bond)\b/ },
+    { cat: 'Technology',  re: /\b(tech|technology|software|hardware|gadget|ai|artificial intelligence|cyber|security|app)\b/ },
+    { cat: 'Science',     re: /\b(science|research|space|nasa|astronomy|physics|biology|climate|environment)\b/ },
+    { cat: 'Health',      re: /\b(health|medicine|medical|disease|covid|vaccine|drug|mental health)\b/ },
+    { cat: 'Sports',      re: /\b(sport|sports|soccer|football|nba|mlb|nfl|tennis|golf|olympic|f1|formula 1)\b/ },
+    { cat: 'Entertainment', re: /\b(entertainment|culture|music|movie|film|tv|celebrity)\b/ },
+  ];
+  for (const t of tests) if (t.re.test(haystack)) return t.cat;
+
+  // Host/path-based routing (strong signals)
+  const link = String(entry.link || '').toLowerCase();
+
+  // BBC
+  if (/bbc\./.test(link)) {
+    if (/\/news\/world/.test(link))       return 'World';
+    if (/\/news\/business/.test(link))    return 'Business';
+    if (/\/news\/technology/.test(link))  return 'Technology';
+    if (/\/news\/science|science-environment/.test(link)) return 'Science';
+    if (/\/news\/health/.test(link))      return 'Health';
+    if (/\/sport\//.test(link))           return 'Sports';
+    if (/\/news\/politics/.test(link))    return 'Politics';
+  }
+
+  // NYTimes
+  if (/nytimes\.com/.test(link)) {
+    if (/\/world\//.test(link))        return 'World';
+    if (/\/business\//.test(link))     return 'Business';
+    if (/\/technology\//.test(link))   return 'Technology';
+    if (/\/science\//.test(link))      return 'Science';
+    if (/\/health\//.test(link))       return 'Health';
+    if (/\/sports\//.test(link))       return 'Sports';
+    if (/\/politics\//.test(link) || /\/us\//.test(link)) return 'Politics';
+  }
+
+  // NPR
+  if (/npr\.org/.test(link)) {
+    if (/\/sections\/(world|asia|europe|africa|americas)\//.test(link)) return 'World';
+    if (/\/sections\/(technology|tech)\//.test(link))                   return 'Technology';
+    if (/\/sections\/(science|space)\//.test(link))                     return 'Science';
+    if (/\/sections\/(business|economy)\//.test(link))                  return 'Business';
+    if (/\/sections\/health\//.test(link))                              return 'Health';
+    if (/\/sections\/sports\//.test(link))                              return 'Sports';
+    if (/\/sections\/politics\//.test(link))                            return 'Politics';
+  }
+
+  // The Verge (mostly tech)
+  if (/theverge\.com/.test(link)) return 'Technology';
+
+  // Feed-level hints as a last fallback
+  const ft = String(feedTitle).toLowerCase();
+  if (ft.includes('world'))       return 'World';
+  if (ft.includes('technology'))  return 'Technology';
+  if (ft.includes('science'))     return 'Science';
+  if (ft.includes('business'))    return 'Business';
+  if (ft.includes('health'))      return 'Health';
+  if (ft.includes('sports'))      return 'Sports';
+  if (ft.includes('politics'))    return 'Politics';
+
+  return 'Other';
+}
+
+
+function inferRegionFromText(title = '', desc = '') {
+  const text = `${title} ${desc}`.toLowerCase();
+  for (const key of Object.keys(CONTINENT_MAP)) {
+    if (text.includes(key)) return CONTINENT_MAP[key];
+  }
+  if (/\b(europe|eu)\b/.test(text)) return 'Europe';
+  if (/\b(asia|asian|pacific)\b/.test(text)) return 'Asia';
+  if (/\b(africa|african)\b/.test(text)) return 'Africa';
+  if (/\b(middle east|gaza|west bank|yemen)\b/.test(text)) return 'Middle East';
+  if (/\b(south america|latin america)\b/.test(text)) return 'South America';
+  if (/\b(north america)\b/.test(text)) return 'North America';
+  if (/\b(australia|oceania)\b/.test(text)) return 'Oceania';
+  return 'Global';
+}
+
+
 // crawling the web faces legal issues
 // here are some public RSS feed URLs
 //    meaning each URL is a channel that publishes many items
@@ -26,6 +132,8 @@ const FEEDS = [
 
 let cache = { items: [], lastFetched: 0 };
 const CACHE_MS = 1000 * 60 * 5; // 5 minutes
+
+
 
 // function pickImage(entry) {
 //     const media = entry.enclosure?.url || entry['media: content']?.url;
@@ -73,22 +181,37 @@ function pickImage(entry, feedUrl) {
     return null;
 }
 
+// normalizeEntry helpers
+function stripHtml(s = '') {
+  return String(s).replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+}
+
+
+
 function normalizeEntry(entry, sourceTitle, feedUrl) {
+  const rawDesc =
+    entry.contentSnippet ||
+    entry.summary ||
+    entry.contentEncoded ||
+    entry.content ||
+    '';
+
+  const description = stripHtml(rawDesc);
+  const url = entry.link || null;
+
   return {
-    id: entry.guid || entry.id || entry.link,
-    title: entry.title?.trim() || '(unlisted)',
-    url: entry.link || null,
-    source: sourceTitle || (entry.link ? new URL(entry.link).hostname : new URL(feedUrl).hostname),
-    description: (
-      entry.contentSnippet ||
-      entry.summary ||
-      stripHtml(entry.contentEncoded || entry.content) ||
-      ''
-    ).trim(),
+    id: entry.guid || entry.id || url || `${feedUrl}#${entry.title || 'untitled'}`,
+    title: (entry.title || '(unlisted)').trim(),
+    url,
+    source: sourceTitle || (url ? new URL(url).hostname : new URL(feedUrl).hostname),
+    description,
     imageUrl: pickImage(entry, feedUrl),
     publishedAt: entry.isoDate || entry.pubDate || null,
+    category: inferCategory(entry, sourceTitle, feedUrl),
+    region: inferRegionFromText(entry.title, description),
   };
 }
+
 
 function dedupeByUrl(items) {
     const seen = new Set();
@@ -113,7 +236,7 @@ export async function fetchLatestNews() {
             const feed = await parser.parseURL(feedUrl);
             const src = feed.title || new URL(feedUrl).hostname;
             for (const item of feed.items || []) {
-                results.push(normalizeEntry(item, src));
+                results.push(normalizeEntry(item, src, feedUrl));
             }
         } catch (e) {
             // skip failing feeds
