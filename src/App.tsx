@@ -339,7 +339,11 @@ function App() {
 
       {/* Main Content */}
       <main className="max-w-sm mx-auto px-4 pb-8">
+<<<<<<< Updated upstream
         <div className="relative h-[80vh] max-h-[620px] sm:max-h-[800px]">
+=======
+        <div className="relative h-[600px] sm:h-[760px]">
+>>>>>>> Stashed changes
           {isLoading ? (
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="bg-white rounded-2xl shadow-xl border border-gray-100 w-full h-full max-w-sm mx-auto flex items-center justify-center">
