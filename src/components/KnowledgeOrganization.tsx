@@ -16,11 +16,31 @@ export const KnowledgeOrganization: React.FC<KnowledgeOrganizationProps> = ({
   const [selectedCluster, setSelectedCluster] = useState<KeywordCluster | null>(null);
   const [selectedSeries, setSelectedSeries] = useState<KnowledgeSeries | null>(null);
 
+  const liked = useMemo(
+    () => swipeHistory.filter(s => s.direction === 'right' && s.article),
+    [swipeHistory]
+  );
+
+  // normalize optional article fields so we never try to access an undefined object
+  const normalized = useMemo(() => {
+    return liked.map(s => ({
+      ...s,
+      article: {
+        ...s.article,
+        summary: s.article.summary ?? s.article.description ?? '',
+        category: s.article.category ?? 'general',
+        region: s.article.region ?? 'world',
+        publishedAt: s.article.publishedAt ?? null,
+      }
+    }));
+  }, [liked])
+
+  // same function, now use normalized objects
   const { clusters, series } = useMemo(() => {
-    const clusters = generateKeywordClusters(swipeHistory);
+    const clusters = generateKeywordClusters(normalized);
     const series = generateKnowledgeSeries(clusters);
     return { clusters, series };
-  }, [swipeHistory]);
+  }, [normalized]);
 
   const getSentimentColor = (sentiment: 'positive' | 'negative' | 'mixed') => {
     switch (sentiment) {
@@ -30,8 +50,13 @@ export const KnowledgeOrganization: React.FC<KnowledgeOrganizationProps> = ({
     }
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
+  // change to accept missing dates
+  const formatDate = (dateString?: string | null) => {
+    if (!dateString) return '';
+    const d = new Date(dateString);
+    if (isNaN(d.getTime())) return '';
+    
+    return d.toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric',
       year: 'numeric'
@@ -91,24 +116,40 @@ export const KnowledgeOrganization: React.FC<KnowledgeOrganizationProps> = ({
               <h2 className="text-lg font-semibold text-gray-900">Articles</h2>
               {selectedCluster.articles.map(article => (
                 <div key={article.id} className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow">
-                  <div className="flex gap-4">
+                  {/* add fallback to image*/}
+                  {article.imageUrl ? (
                     <img
                       src={article.imageUrl}
                       alt={article.title}
                       className="w-24 h-24 rounded-lg object-cover flex-shrink-0"
                     />
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between mb-2">
-                        <h3 className="font-semibold text-gray-900 line-clamp-2">{article.title}</h3>
+                  ) : (
+                    <div className="w-24 h-24 rounded-lg bg-gray-100 flex items-center justify-senter text-xs text-gray-400 flex-shrink-0">
+                      No Image
+                    </div>
+                  )}
+
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-start justify-between mb-2">
+                      <h3 className="font-semibold text-gray-900 line-clamp-2">{article.title}</h3>
+
+                      {/* add fallback to category */}
+                      {article.category && (
                         <span className="px-2 py-1 bg-gray-100 text-gray-600 rounded-md text-xs ml-2 flex-shrink-0">
                           {article.category}
                         </span>
-                      </div>
-                      <p className="text-gray-600 text-sm line-clamp-3 mb-3">{article.summary}</p>
-                      <div className="flex items-center justify-between text-xs text-gray-500">
-                        <span>{article.source}</span>
-                        <span>{formatDate(article.publishedAt)}</span>
-                      </div>
+                      )}
+                    </div>
+                    
+                    {/* add fallback to summary */}
+                    <p className="text-gray-600 text-sm line-clamp-3 mb-3">
+                      {article.summary ?? article.description ?? ''}
+                    </p>
+                    
+                    {/* add fallback to date */}
+                    <div className="flex items-center justify-between text-xs text-gray-500">
+                      <span>{article.source ?? ''}</span>
+                      <span>{formatDate(article.publishedAt)}</span>
                     </div>
                   </div>
                 </div>
