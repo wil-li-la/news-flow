@@ -86,9 +86,9 @@ export const SwipeableCard: React.FC<SwipeableCardProps> = ({ article, onSwipe, 
       onTouchMove={(e) => handleMove(e.touches[0].clientX, e.touches[0].clientY)}
       onTouchEnd={handleEnd}
     >
-      <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden h-full max-w-sm mx-auto max-h-[500px]">
+      <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden h-full max-w-sm mx-auto">
         {/* Image */}
-        <div className="relative h-32 overflow-hidden">
+        <div className="relative h-48 overflow-hidden">
           {article.imageUrl ? (
             <img
               src={article.imageUrl}
@@ -118,7 +118,7 @@ export const SwipeableCard: React.FC<SwipeableCardProps> = ({ article, onSwipe, 
         </div>
 
         {/* Content */}
-        <div className="p-4 pb-20 space-y-3">
+        <div className="p-6 pb-28 space-y-4">
           <h2 className="text-lg font-bold text-gray-900 leading-tight line-clamp-2">
             {article.title}
           </h2>
