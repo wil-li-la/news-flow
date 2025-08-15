@@ -1,4 +1,4 @@
-import { NewsArticle, MindMapNode, MindMapLink, SwipeAction } from '../types';
+import { NewsArticle, MindMapNode, MindMapLink, SwipeAction, ArticleRef } from '../types';
 
 export type MindMapViewMode = 'semantic' | 'category' | 'region';
 
@@ -95,6 +95,16 @@ const extractKeywords = (text: string): string[] => {
     .map(([w]) => w);
 };
 
+/** Convert a full article to a lightweight reference */
+const toRef = (a: NewsArticle): ArticleRef => ({
+  id: a.id,
+  title: a.title,
+  url: a.url,
+  source: a.source,
+  publishedAt: a.publishedAt ?? null,
+  imageUrl: a.imageUrl ?? null,
+});
+
 /* ---------- Public API: build nodes + links ---------- */
 
 export const generateMindMapData = (
@@ -135,7 +145,8 @@ const generateSemanticView = (liked: SwipeAction[]) => {
       region: getMostCommonRegion(arts),
       sentiment: 'liked',
       nodeType: 'keyword',
-      articleCount: arts.length
+      articleCount: arts.length,
+      articleRefs: arts.slice(0, 12).map(toRef), // NEW
     }));
 
   const links: MindMapLink[] = [];
@@ -172,7 +183,8 @@ const generateCategoryView = (liked: SwipeAction[]) => {
     region: 'Global',
     sentiment: 'liked',
     nodeType: 'category',
-    articleCount: arts.length
+    articleCount: arts.length,
+    articleRefs: arts.slice(0, 12).map(toRef), // NEW
   }));
 
   const links: MindMapLink[] = [];
@@ -211,7 +223,8 @@ const generateRegionView = (liked: SwipeAction[]) => {
     region,
     sentiment: 'liked',
     nodeType: 'region',
-    articleCount: arts.length
+    articleCount: arts.length,
+    articleRefs: arts.slice(0, 12).map(toRef), // NEW
   }));
 
   const links: MindMapLink[] = [];

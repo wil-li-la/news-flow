@@ -8,6 +8,15 @@ interface MindMapProps {
   swipeHistory: SwipeAction[];
 }
 
+const formatMiniDate = (iso?: string | null) => {
+  if (!iso) return '';
+  const d = new Date(iso);
+  return isNaN(d.getTime())
+    ? ''
+    : d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+};
+
+
 export const MindMap: React.FC<MindMapProps> = ({ swipeHistory }) => {
   const svgRef = useRef<SVGSVGElement>(null);
   const [selectedNode, setSelectedNode] = useState<MindMapNode | null>(null);
@@ -334,50 +343,98 @@ export const MindMap: React.FC<MindMapProps> = ({ swipeHistory }) => {
       {/* Node details modal */}
       {selectedNode && (
         <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-20">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 p-6">
-            <div className="flex items-start justify-between mb-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-lg mx-4 p-6 max-h-[85vh] flex flex-col">
+            {/* Header */}
+            <div className="flex items-start justify-between">
               <div className="flex items-center gap-3">
                 <div
                   className="w-6 h-6 rounded-full"
-                  style={{ 
-                    backgroundColor: viewMode === 'region' 
-                      ? getRegionColor(selectedNode.region) 
-                      : getCategoryColor(selectedNode.category) 
+                  style={{
+                    backgroundColor:
+                      viewMode === 'region'
+                        ? getRegionColor(selectedNode.region)
+                        : getCategoryColor(selectedNode.category),
                   }}
                 />
                 <div>
-                  <h3 className="font-semibold text-gray-900 capitalize">{selectedNode.title}</h3>
+                  <h3 className="font-semibold text-gray-900 capitalize">
+                    {selectedNode.title}
+                  </h3>
                   <p className="text-sm text-gray-600">
                     {viewMode === 'semantic' && `${selectedNode.category} • ${selectedNode.region}`}
-                    {viewMode === 'category' && `${selectedNode.articleCount || 0} articles`}
-                    {viewMode === 'region' && `${selectedNode.articleCount || 0} articles`}
+                    {(viewMode === 'category' || viewMode === 'region') &&
+                      `${selectedNode.articleCount || 0} articles`}
                   </p>
                 </div>
               </div>
               <button
                 onClick={() => setSelectedNode(null)}
-                className="text-gray-400 hover:text-gray-600"
+                className="text-gray-400 hover:text-gray-600 text-xl leading-none"
+                aria-label="Close"
               >
                 ×
               </button>
             </div>
-            <div className="mb-3">
-              <p className="text-sm text-gray-600 mb-2">
-                {getViewModeLabel(viewMode)} View • Node Details
-              </p>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                'bg-green-100 text-green-800'
-              }`}>
+
+            {/* Badges */}
+            <div className="mt-3">
+              <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
                 {viewMode === 'semantic' && 'Keyword Hub'}
                 {viewMode === 'category' && 'Category Hub'}
                 {viewMode === 'region' && 'Regional Hub'}
               </span>
             </div>
+
+            {/* Article list */}
+            <div className="mt-4 border-t border-gray-100 pt-4">
+              <div className="flex items-center justify-between">
+                <h4 className="text-sm font-semibold text-gray-900">
+                  Articles ({selectedNode.articleRefs?.length ?? 0})
+                </h4>
+
+                {selectedNode.articleRefs?.length ? (
+                  <button
+                    onClick={() => {
+                      selectedNode.articleRefs!.forEach(a => {
+                        if (a.url) window.open(a.url, '_blank', 'noopener,noreferrer');
+                      });
+                    }}
+                    className="text-xs text-blue-600 hover:text-blue-700"
+                  >
+                    Open all
+                  </button>
+                ) : null}
+              </div>
+
+              {selectedNode.articleRefs?.length ? (
+                <ul className="mt-2 divide-y divide-gray-100 overflow-y-auto pr-1 space-y-0 max-h-[50vh]">
+                  {selectedNode.articleRefs.map(ref => (
+                    <li key={ref.id} className="py-3">
+                      <a
+                        href={ref.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="block text-sm font-medium text-gray-900 hover:underline"
+                      >
+                        {ref.title}
+                      </a>
+                      <div className="text-xs text-gray-500 mt-1">
+                        {ref.source}
+                        {ref.publishedAt ? ` • ${formatMiniDate(ref.publishedAt)}` : ''}
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-sm text-gray-500 mt-2">
+                  No articles attached to this node yet.
+                </p>
+              )}
+            </div>
           </div>
         </div>
       )}
+
     </div>
   );
 };

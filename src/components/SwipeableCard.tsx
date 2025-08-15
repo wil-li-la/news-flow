@@ -119,11 +119,11 @@ export const SwipeableCard: React.FC<SwipeableCardProps> = ({ article, onSwipe, 
 
         {/* Content */}
         <div className="p-6 pb-28 space-y-4">
-          <h2 className="text-lg font-bold text-gray-900 leading-tight line-clamp-2">
+          <h2 className="text-lg font-bold text-gray-900 leading-tight">
             {article.title}
           </h2>
           
-          <p className="text-gray-600 text-sm leading-relaxed line-clamp-3">
+          <p className="text-gray-600 text-sm leading-relaxed">
             {article.summary ?? article.description ?? ''}
           </p>
 

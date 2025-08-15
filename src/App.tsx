@@ -127,7 +127,7 @@ function App() {
               const res = await fetch('/api/summarize', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ title: a.title, text: a.description, maxWords: 120 }),
+                body: JSON.stringify({ title: a.title, text: a.description, maxWords: 80 }),
               });
               if (!res.ok) return { id: a.id };
               const j = await res.json();

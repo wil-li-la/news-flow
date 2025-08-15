@@ -23,11 +23,21 @@ export interface NewsArticle {
 
   // provided by AI API
   summary?: string;
-  bullets?:string[];
+  bullets?: string[];
 
   // backwards compatibility with old mock data
   category?: string;
   region?: string;
+}
+
+/** Lightweight reference used in MindMap nodes */
+export interface ArticleRef {
+  id: string;
+  title: string;
+  url: string;
+  source: string;
+  publishedAt?: string | null;
+  imageUrl?: string | null;
 }
 
 export interface UserPreferences {
@@ -52,6 +62,10 @@ export interface MindMapNode {
   sentiment: 'liked' | 'disliked';
   nodeType?: 'keyword' | 'category' | 'region' | 'article';
   articleCount?: number;
+
+  /** NEW: list of articles this node represents (for click-through) */
+  articleRefs?: ArticleRef[];
+
   x?: number;
   y?: number;
   fx?: number | null;

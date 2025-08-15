@@ -2,7 +2,7 @@ import OpenAI from "openai";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-export async function summarizeNews({ text, title = "", maxWords = 160 }) {
+export async function summarizeNews({ text, title = "", maxWords = 80 }) {
     if (!text || text.trim().length === 0) {
         throw new Error("summarizeNews: 'text' is required and cannot be empty");
     }
