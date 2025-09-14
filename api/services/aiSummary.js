@@ -7,7 +7,7 @@ export async function summarizeNews({ text, title = "", maxWords = 80 }) {
         throw new Error("summarizeNews: 'text' is required and cannot be empty");
     }
 
-    const model = "gpt-4.1-nano";
+    const model = "gpt-5-nano";
 
     const res = await openai.chat.completions.create({
         model,
