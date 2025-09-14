@@ -1,0 +1,17 @@
+{
+  "expo": {
+    "name": "NewsFlow Mobile",
+    "slug": "newsflow-mobile",
+    "scheme": "newsflow",
+    "plugins": [
+      "expo-router"
+    ],
+    "ios": {
+      "bundleIdentifier": "com.newsflow.app"
+    },
+    "android": {
+      "package": "com.newsflow.app"
+    }
+  }
+}
+

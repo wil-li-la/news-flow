@@ -1,8 +1,5 @@
-import { NewsArticle, MindMapNode, MindMapLink, SwipeAction, ArticleRef } from '../types';
-
-export type MindMapViewMode = 'semantic' | 'category' | 'region';
-
-/* ---------- Public helpers used by the MindMap component ---------- */
+import { NewsArticle } from '../types';
+import { MindMapLink, MindMapNode, MindMapViewMode, SwipeAction } from '../types';
 
 export const getCategoryColor = (category: string): string => {
   const colors: Record<string, string> = {
@@ -42,79 +39,45 @@ export const getLinkColor = (type: 'category' | 'region' | 'semantic'): string =
   }
 };
 
-/* ---------- Similarity & keyword extraction ---------- */
-
-export const calculateSemanticSimilarity = (a1: NewsArticle, a2: NewsArticle): number => {
-  const getKeywords = (text: string): string[] =>
-    text
-      .toLowerCase()
-      .replace(/[^\w\s]/g, ' ')
-      .split(/\s+/)
-      .filter(w => w.length > 3)
-      .filter(w => !STOPWORDS.has(w));
-
-  const t1 = `${a1.title || ''} ${a1.summary || a1.description || ''}`;
-  const t2 = `${a2.title || ''} ${a2.summary || a2.description || ''}`;
-
-  const k1 = getKeywords(t1);
-  const k2 = getKeywords(t2);
-  if (k1.length === 0 || k2.length === 0) return 0;
-
-  const set1 = new Set(k1);
-  const set2 = new Set(k2);
-  const intersection = [...set1].filter(w => set2.has(w));
-  const union = new Set([...k1, ...k2]);
-
-  return intersection.length / union.size;
-};
-
 const STOPWORDS = new Set([
-  'the','a','an','and','or','but','in','on','at','to','for','of','with','by',
-  'from','up','about','into','through','during','before','after','above','below',
-  'between','among','this','that','these','those','new','news','today','yesterday',
-  'will','have','been','they','were','said','each','which','their','time','more',
-  'very','what','know','just','first','into','over','think','also','your','work',
-  'life','only','years','way','may','say','come','now','find','long','down','day',
-  'did','get','has','him','his','how','man','old','see','two','who','boy','let',
-  'put','she','too','use','its'
+  'the','a','an','and','or','but','in','on','at','to','for','of','with','by','from','up','about','into','through','during','before','after','above','below','between','among','this','that','these','those','new','news','today','yesterday','will','have','been','they','were','said','each','which','their','time','more','very','what','know','just','first','into','over','think','also','your','work','life','only','years','way','may','say','come','now','find','long','down','day','did','get','has','him','his','how','man','old','see','two','who','boy','let','put','she','too','use','its'
 ]);
 
 const extractKeywords = (text: string): string[] => {
-  const words = text.toLowerCase()
-    .replace(/[^\w\s]/g, ' ')
-    .split(/\s+/)
+  const words = text.toLowerCase().replace(/[^\w\s]/g, ' ').split(/\s+/)
     .filter(w => w.length > 3 && !STOPWORDS.has(w))
     .filter(w => !/^\d+$/.test(w));
-
   const count: Record<string, number> = {};
   for (const w of words) count[w] = (count[w] || 0) + 1;
-
-  return Object.entries(count)
-    .sort(([,a],[,b]) => b - a)
-    .slice(0, 5)
-    .map(([w]) => w);
+  return Object.entries(count).sort(([,a],[,b]) => b - a).slice(0, 5).map(([w]) => w);
 };
 
-/** Convert a full article to a lightweight reference */
-const toRef = (a: NewsArticle): ArticleRef => ({
-  id: a.id,
-  title: a.title,
-  url: a.url,
-  source: a.source,
-  publishedAt: a.publishedAt ?? null,
-  imageUrl: a.imageUrl ?? null,
-});
+const calculateSemanticSimilarity = (a1: NewsArticle, a2: NewsArticle): number => {
+  const getKw = (s: string) => extractKeywords(s);
+  const k1 = getKw(`${a1.title || ''} ${a1.summary || a1.description || ''}`);
+  const k2 = getKw(`${a2.title || ''} ${a2.summary || a2.description || ''}`);
+  if (!k1.length || !k2.length) return 0;
+  const s1 = new Set(k1);
+  const s2 = new Set(k2);
+  const intersection = [...s1].filter(w => s2.has(w));
+  const union = new Set([...k1, ...k2]);
+  return intersection.length / union.size;
+};
 
-/* ---------- Public API: build nodes + links ---------- */
+const getMostCommonCategory = (arts: NewsArticle[]): string => {
+  const c: Record<string, number> = {};
+  for (const a of arts) c[a.category || 'Other'] = (c[a.category || 'Other'] || 0) + 1;
+  return Object.entries(c).sort(([,a],[,b]) => b - a)[0]?.[0] || 'Other';
+};
+const getMostCommonRegion = (arts: NewsArticle[]): string => {
+  const c: Record<string, number> = {};
+  for (const a of arts) c[a.region || 'Global'] = (c[a.region || 'Global'] || 0) + 1;
+  return Object.entries(c).sort(([,a],[,b]) => b - a)[0]?.[0] || 'Global';
+};
 
-export const generateMindMapData = (
-  swipeHistory: SwipeAction[],
-  viewMode: MindMapViewMode = 'semantic'
-): { nodes: MindMapNode[]; links: MindMapLink[] } => {
-  // Only liked articles
+export const generateMindMapData = (swipeHistory: SwipeAction[], viewMode: MindMapViewMode = 'semantic') => {
   const liked = swipeHistory.filter(s => s.direction === 'right');
-  if (liked.length === 0) return { nodes: [], links: [] };
-
+  if (!liked.length) return { nodes: [] as MindMapNode[], links: [] as MindMapLink[] };
   switch (viewMode) {
     case 'category': return generateCategoryView(liked);
     case 'region': return generateRegionView(liked);
@@ -123,21 +86,16 @@ export const generateMindMapData = (
   }
 };
 
-/* ---------- View builders ---------- */
-
 const generateSemanticView = (liked: SwipeAction[]) => {
   const keywordMap: Record<string, NewsArticle[]> = {};
-
   for (const s of liked) {
-    const text = `${s.article.title} ${s.article.summary || s.article.description || ''}`;
-    const kws = extractKeywords(text);
-    for (const k of kws.slice(0, 3)) {
+    const text = `${s.article.title} ${s.article.summary ?? s.article.description ?? ''}`;
+    for (const k of extractKeywords(text).slice(0, 3)) {
       (keywordMap[k] ||= []).push(s.article);
     }
   }
-
   const nodes: MindMapNode[] = Object.entries(keywordMap)
-    .filter(([, arts]) => arts.length >= 2)
+    .filter(([,arts]) => arts.length >= 2)
     .map(([kw, arts]) => ({
       id: `keyword-${kw}`,
       title: kw.charAt(0).toUpperCase() + kw.slice(1),
@@ -146,36 +104,26 @@ const generateSemanticView = (liked: SwipeAction[]) => {
       sentiment: 'liked',
       nodeType: 'keyword',
       articleCount: arts.length,
-      articleRefs: arts.slice(0, 12).map(toRef), // NEW
     }));
-
   const links: MindMapLink[] = [];
   for (let i = 0; i < nodes.length; i++) {
     for (let j = i + 1; j < nodes.length; j++) {
-      const k1 = nodes[i].title.toLowerCase();
-      const k2 = nodes[j].title.toLowerCase();
-      const a1 = keywordMap[k1] || [];
-      const a2 = keywordMap[k2] || [];
-
+      const a1 = keywordMap[nodes[i].title.toLowerCase()] || [];
+      const a2 = keywordMap[nodes[j].title.toLowerCase()] || [];
       const set2 = new Set(a2.map(a => a.id));
       const shared = a1.filter(a => set2.has(a.id)).length;
-
       if (shared > 0) {
         const strength = Math.min((shared / Math.max(a1.length, a2.length)) * 2, 1);
-        if (strength > 0.2) {
-          links.push({ source: nodes[i].id, target: nodes[j].id, strength, type: 'semantic' });
-        }
+        if (strength > 0.2) links.push({ source: nodes[i].id, target: nodes[j].id, strength, type: 'semantic' });
       }
     }
   }
-
   return { nodes, links };
 };
 
 const generateCategoryView = (liked: SwipeAction[]) => {
   const map: Record<string, NewsArticle[]> = {};
   for (const s of liked) (map[s.article.category || 'Other'] ||= []).push(s.article);
-
   const nodes: MindMapNode[] = Object.entries(map).map(([cat, arts]) => ({
     id: `category-${cat}`,
     title: cat,
@@ -184,38 +132,25 @@ const generateCategoryView = (liked: SwipeAction[]) => {
     sentiment: 'liked',
     nodeType: 'category',
     articleCount: arts.length,
-    articleRefs: arts.slice(0, 12).map(toRef), // NEW
   }));
-
   const links: MindMapLink[] = [];
   for (let i = 0; i < nodes.length; i++) {
     for (let j = i + 1; j < nodes.length; j++) {
       const a1 = map[nodes[i].title] || [];
       const a2 = map[nodes[j].title] || [];
-
       let total = 0, n = 0;
       for (const x of a1) for (const y of a2) { total += calculateSemanticSimilarity(x, y); n++; }
       if (!n) continue;
-
       const avg = total / n;
-      if (avg > 0.1) {
-        links.push({
-          source: nodes[i].id,
-          target: nodes[j].id,
-          strength: Math.min(avg * 3, 1),
-          type: 'category'
-        });
-      }
+      if (avg > 0.1) links.push({ source: nodes[i].id, target: nodes[j].id, strength: Math.min(avg * 3, 1), type: 'category' });
     }
   }
-
   return { nodes, links };
 };
 
 const generateRegionView = (liked: SwipeAction[]) => {
   const map: Record<string, NewsArticle[]> = {};
   for (const s of liked) (map[s.article.region || 'Global'] ||= []).push(s.article);
-
   const nodes: MindMapNode[] = Object.entries(map).map(([region, arts]) => ({
     id: `region-${region}`,
     title: region,
@@ -224,44 +159,32 @@ const generateRegionView = (liked: SwipeAction[]) => {
     sentiment: 'liked',
     nodeType: 'region',
     articleCount: arts.length,
-    articleRefs: arts.slice(0, 12).map(toRef), // NEW
   }));
-
   const links: MindMapLink[] = [];
   for (let i = 0; i < nodes.length; i++) {
     for (let j = i + 1; j < nodes.length; j++) {
       const a1 = map[nodes[i].title] || [];
       const a2 = map[nodes[j].title] || [];
-
       let total = 0, n = 0;
       for (const x of a1) for (const y of a2) { total += calculateSemanticSimilarity(x, y); n++; }
       if (!n) continue;
-
       const avg = total / n;
-      if (avg > 0.1) {
-        links.push({
-          source: nodes[i].id,
-          target: nodes[j].id,
-          strength: Math.min(avg * 3, 1),
-          type: 'region'
-        });
-      }
+      if (avg > 0.1) links.push({ source: nodes[i].id, target: nodes[j].id, strength: Math.min(avg * 3, 1), type: 'region' });
     }
   }
-
   return { nodes, links };
 };
 
-/* ---------- Small helpers ---------- */
+export function layoutNodes(width: number, height: number, nodes: MindMapNode[]): Record<string, { x: number; y: number }> {
+  // Simple radial layout for MVP
+  const cx = width / 2, cy = height / 2;
+  const r = Math.min(cx, cy) - 40;
+  const pos: Record<string, { x: number; y: number }> = {};
+  const n = Math.max(nodes.length, 1);
+  nodes.forEach((node, i) => {
+    const angle = (i / n) * Math.PI * 2;
+    pos[node.id] = { x: cx + r * Math.cos(angle), y: cy + r * Math.sin(angle) };
+  });
+  return pos;
+}
 
-const getMostCommonCategory = (articles: NewsArticle[]): string => {
-  const count: Record<string, number> = {};
-  for (const a of articles) count[a.category || 'Other'] = (count[a.category || 'Other'] || 0) + 1;
-  return Object.entries(count).sort(([,a],[,b]) => b - a)[0]?.[0] || 'Other';
-};
-
-const getMostCommonRegion = (articles: NewsArticle[]): string => {
-  const count: Record<string, number> = {};
-  for (const a of articles) count[a.region || 'Global'] = (count[a.region || 'Global'] || 0) + 1;
-  return Object.entries(count).sort(([,a],[,b]) => b - a)[0]?.[0] || 'Global';
-};
