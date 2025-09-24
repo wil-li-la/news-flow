@@ -56,7 +56,7 @@ const styles = StyleSheet.create({
     borderColor: '#eee',
   },
   imageWrap: { position: 'relative' },
-  image: { width: '100%', height: Math.round(Math.max(260, Math.min(380, Dimensions.get('window').height * 0.4))) } as any,
+  image: { width: '100%', height: Math.round(Math.max(320, Math.min(520, Dimensions.get('window').height * 0.55))) } as any,
   imagePlaceholder: { backgroundColor: '#f0f0f0' },
   content: { padding: 16, paddingBottom: 24 },
   title: { fontSize: 18, fontWeight: '700', color: '#111' },

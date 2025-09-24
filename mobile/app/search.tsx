@@ -55,10 +55,13 @@ export default function SearchScreen() {
     router.back();
   };
 
+  const BOTTOM_BAR_HEIGHT = 64;
+  const BOTTOM_BAR_MARGIN = 12;
+  const paddingBottom = insets.bottom + BOTTOM_BAR_HEIGHT + BOTTOM_BAR_MARGIN + 16;
   return (
     <View style={{ flex: 1, backgroundColor: 'white' }}>
       <Stack.Screen options={{ headerShown: false }} />
-      <View style={[styles.header, { paddingTop: Math.max(8, insets.top + 6) }]}> 
+      <View style={[styles.header, { paddingTop: insets.top + 10 }]}> 
         <Pressable onPress={handleBack} style={styles.backBtn}><Text style={styles.backText}>Back</Text></Pressable>
         <Text style={styles.title}>Search</Text>
       </View>
@@ -134,7 +137,7 @@ export default function SearchScreen() {
           <FlatList
             data={results}
             keyExtractor={(item) => item.id}
-            contentContainerStyle={{ padding: 16, gap: 16, paddingBottom: Math.max(24, insets.bottom + 16) }}
+            contentContainerStyle={{ padding: 16, gap: 16, paddingBottom }}
             renderItem={({ item }) => (
               <ArticleCard article={item} />
             )}
@@ -154,18 +157,7 @@ const styles = StyleSheet.create({
   searchRow: { flexDirection: 'row', alignItems: 'center', gap: 8, padding: 12 },
   input: { flex: 1, backgroundColor: '#f8fafc', paddingHorizontal: 12, paddingVertical: 10, borderRadius: 10, borderWidth: 1, borderColor: '#e2e8f0' },
   searchBtn: { width: 44, height: 40, backgroundColor: '#2563eb', borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
-  empty: { color: '#64748b', textAlign: 'center', marginTop: 24 }
-});
-
-const styles2 = StyleSheet.create({});
-
-const stylesExtra = StyleSheet.create({});
-
-const stylesCommon = StyleSheet.create({});
-
-const stylesSearch = StyleSheet.create({});
-
-Object.assign(styles, {
+  empty: { color: '#64748b', textAlign: 'center', marginTop: 24 },
   sectionTitle: { fontSize: 14, fontWeight: '600', color: '#334155' },
   suggestionBtn: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#f8fafc', paddingHorizontal: 12, paddingVertical: 12, borderRadius: 10, borderWidth: 1, borderColor: '#e2e8f0' },
   popularPill: { paddingHorizontal: 10, paddingVertical: 8, backgroundColor: '#dbeafe', borderRadius: 999 },

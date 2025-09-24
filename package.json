@@ -8,7 +8,10 @@
     "start": "npm run dev:api",
     "mobile:start": "concurrently \"npm run dev:api\" \"npm --prefix mobile start\"",
     "mobile:ios": "concurrently \"npm run dev:api\" \"npm --prefix mobile run ios\"",
-    "mobile:android": "concurrently \"npm run dev:api\" \"npm --prefix mobile run android\""
+    "mobile:android": "concurrently \"npm run dev:api\" \"npm --prefix mobile run android\"",
+    "start:with-api": "npm run mobile:start",
+    "ios:with-api": "npm run mobile:ios",
+    "android:with-api": "npm run mobile:android"
   },
   "dependencies": {
     "cors": "^2.8.5",
