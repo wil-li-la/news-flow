@@ -40,7 +40,6 @@ export default function RootLayout() {
           }}
         >
           {/* Hide the index route from the tab bar (we redirect it). */}
-          <Tabs.Screen name="index" options={{ href: null }} />
           <Tabs.Screen
             name="search"
             options={{

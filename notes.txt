@@ -1,0 +1,4 @@
+To-dos:
+
+先看看 這個 API 會回傳什麼 https://6on7yqwxw0.execute-api.us-east-1.amazonaws.com/prod
+

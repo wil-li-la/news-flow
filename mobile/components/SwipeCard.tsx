@@ -7,30 +7,45 @@ type Props = {
   onSwipeLeft: () => void;
   onSwipeRight: () => void;
   children: React.ReactNode;
+  onDragProgress?: (p: number) => void; // 0..1 based on horizontal drag
 };
 
-export default function SwipeCard({ isActive, onSwipeLeft, onSwipeRight, children }: Props) {
+export default function SwipeCard({ isActive, onSwipeLeft, onSwipeRight, children, onDragProgress }: Props) {
   const translate = useRef(new Animated.ValueXY({ x: 0, y: 0 })).current;
 
   const panResponder = useMemo(
     () =>
       PanResponder.create({
         onMoveShouldSetPanResponder: () => isActive,
-        onPanResponderMove: Animated.event([null, { dx: translate.x, dy: translate.y }], { useNativeDriver: false }),
+        onPanResponderMove: (evt, gesture) => {
+          Animated.event([null, { dx: translate.x, dy: translate.y }], { useNativeDriver: false })(evt, gesture);
+          if (onDragProgress) {
+            const p = Math.min(1, Math.abs(gesture.dx) / 120);
+            onDragProgress(p);
+          }
+        },
         onPanResponderRelease: (_evt, gesture) => {
           const threshold = 100;
           if (gesture.dx > threshold) {
-            Animated.spring(translate, { toValue: { x: 500, y: gesture.dy }, useNativeDriver: true }).start(onSwipeRight);
+            Animated.spring(translate, { toValue: { x: 500, y: gesture.dy }, useNativeDriver: true }).start(() => {
+              onDragProgress && onDragProgress(0);
+              onSwipeRight();
+            });
             return;
           }
           if (gesture.dx < -threshold) {
-            Animated.spring(translate, { toValue: { x: -500, y: gesture.dy }, useNativeDriver: true }).start(onSwipeLeft);
+            Animated.spring(translate, { toValue: { x: -500, y: gesture.dy }, useNativeDriver: true }).start(() => {
+              onDragProgress && onDragProgress(0);
+              onSwipeLeft();
+            });
             return;
           }
-          Animated.spring(translate, { toValue: { x: 0, y: 0 }, useNativeDriver: true }).start();
+          Animated.spring(translate, { toValue: { x: 0, y: 0 }, useNativeDriver: true }).start(() => {
+            onDragProgress && onDragProgress(0);
+          });
         }
       }),
-    [isActive, onSwipeLeft, onSwipeRight, translate]
+    [isActive, onSwipeLeft, onSwipeRight, translate, onDragProgress]
   );
 
   const rotate = translate.x.interpolate({ inputRange: [-200, 0, 200], outputRange: ['-10deg', '0deg', '10deg'] });
@@ -39,18 +54,28 @@ export default function SwipeCard({ isActive, onSwipeLeft, onSwipeRight, childre
   const passOpacity = translate.x.interpolate({ inputRange: [-120, -30], outputRange: [1, 0], extrapolate: 'clamp' });
   const scale = isActive ? 1 : 0.97;
 
+  // Build transforms explicitly to avoid invalid empty transform objects warning
+  const transforms: any[] = [
+    { translateX: translate.x },
+    { translateY: translate.y },
+    { rotate },
+    { scale },
+  ];
+  if (!isActive) transforms.push({ translateY: 10 });
+
   return (
     <Animated.View
-      style={[styles.container, { transform: [{ translateX: translate.x }, { translateY: translate.y }, { rotate }, { scale }], opacity }]}
+      style={[styles.container, { transform: transforms, opacity }]}
+      pointerEvents={isActive ? 'auto' : 'none'}
       {...panResponder.panHandlers}
     >
       <View style={styles.shadow}>
         <View style={{ position: 'relative' }}>
           {children}
-          <Animated.View style={[styles.overlay, styles.like, { opacity: likeOpacity }]}>
+          <Animated.View pointerEvents="none" style={[styles.overlay, styles.like, { opacity: likeOpacity }]}>
             <Heart color="#fff" size={48} fill="#fff" />
           </Animated.View>
-          <Animated.View style={[styles.overlay, styles.pass, { opacity: passOpacity }]}>
+          <Animated.View pointerEvents="none" style={[styles.overlay, styles.pass, { opacity: passOpacity }]}>
             <X color="#fff" size={48} />
           </Animated.View>
         </View>

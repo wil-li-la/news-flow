@@ -1,4 +1,6 @@
 import Parser from 'rss-parser';
+import { request as httpsRequest } from 'node:https';
+import { request as httpRequest } from 'node:http';
 
 const parser = new Parser({
     // rss-parser will pick up media: content, content:encoded, etc. when present
@@ -133,6 +135,57 @@ const FEEDS = [
 let cache = { items: [], lastFetched: 0 };
 const CACHE_MS = 1000 * 60 * 5; // 5 minutes
 
+async function fetchWithTimeout(url, opts = {}, ms = 3000) {
+  const headers = {
+    'user-agent': 'Mozilla/5.0 (NewsFlow Bot) AppleWebKit/537.36 Chrome/120 Safari/537.36',
+    'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+    ...(opts.headers || {}),
+  };
+
+  const visit = (target, depth = 0) => new Promise((resolve, reject) => {
+    if (depth > 3) return reject(new Error('Too many redirects'));
+    const u = new URL(target);
+    const isHttps = u.protocol === 'https:';
+    const reqFn = isHttps ? httpsRequest : httpRequest;
+
+    const req = reqFn({
+      method: opts.method || 'GET',
+      hostname: u.hostname,
+      port: u.port || (isHttps ? 443 : 80),
+      path: (u.pathname || '/') + (u.search || ''),
+      headers,
+    }, (res) => {
+      const status = res.statusCode || 0;
+      const loc = res.headers.location;
+      if (status >= 300 && status < 400 && loc) {
+        // Follow redirect
+        const next = new URL(loc, target).href;
+        res.resume();
+        return resolve(visit(next, depth + 1));
+      }
+      const chunks = [];
+      res.on('data', (d) => chunks.push(d));
+      res.on('end', () => {
+        const body = Buffer.concat(chunks).toString('utf8');
+        resolve({
+          ok: status >= 200 && status < 300,
+          status,
+          text: async () => body,
+        });
+      });
+    });
+    const timer = setTimeout(() => {
+      req.destroy(new Error('timeout'));
+    }, ms);
+    req.on('error', (err) => reject(err));
+    req.on('close', () => clearTimeout(timer));
+    // No body needed for GET
+    req.end();
+  });
+
+  return visit(url);
+}
+
 
 
 // function pickImage(entry) {
@@ -181,6 +234,24 @@ function pickImage(entry, feedUrl) {
     return null;
 }
 
+async function fetchOgImage(pageUrl, feedUrl) {
+    if (!pageUrl) return null;
+    try {
+        const res = await fetchWithTimeout(pageUrl, {}, 3500);
+        if (!res.ok) return null;
+        const html = await res.text();
+        const matchMeta = (prop, attr = 'property') => {
+            const re = new RegExp(`<meta[^>]+${attr}=["']${prop}["'][^>]+content=["']([^"']+)["'][^>]*>`, 'i');
+            const m = html.match(re);
+            return m?.[1] || null;
+        };
+        const og = matchMeta('og:image') || matchMeta('twitter:image', 'name');
+        return absoluteUrl(og, pageUrl) || absoluteUrl(og, feedUrl);
+    } catch (e) {
+        return null;
+    }
+}
+
 // normalizeEntry helpers
 function stripHtml(s = '') {
   return String(s).replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
@@ -188,7 +259,7 @@ function stripHtml(s = '') {
 
 
 
-function normalizeEntry(entry, sourceTitle, feedUrl) {
+async function normalizeEntry(entry, sourceTitle, feedUrl) {
   const rawDesc =
     entry.contentSnippet ||
     entry.summary ||
@@ -199,13 +270,18 @@ function normalizeEntry(entry, sourceTitle, feedUrl) {
   const description = stripHtml(rawDesc);
   const url = entry.link || null;
 
+  let img = pickImage(entry, feedUrl);
+  if (!img && url) {
+    img = await fetchOgImage(url, feedUrl);
+  }
+
   return {
     id: entry.guid || entry.id || url || `${feedUrl}#${entry.title || 'untitled'}`,
     title: (entry.title || '(unlisted)').trim(),
     url,
     source: sourceTitle || (url ? new URL(url).hostname : new URL(feedUrl).hostname),
     description,
-    imageUrl: pickImage(entry, feedUrl),
+    imageUrl: img,
     publishedAt: entry.isoDate || entry.pubDate || null,
     category: inferCategory(entry, sourceTitle, feedUrl),
     region: inferRegionFromText(entry.title, description),
@@ -236,7 +312,7 @@ export async function fetchLatestNews() {
             const feed = await parser.parseURL(feedUrl);
             const src = feed.title || new URL(feedUrl).hostname;
             for (const item of feed.items || []) {
-                results.push(normalizeEntry(item, src, feedUrl));
+                results.push(await normalizeEntry(item, src, feedUrl));
             }
         } catch (e) {
             // skip failing feeds
