@@ -148,21 +148,7 @@ export async function fetchNews(limit = 5, seenIds: string[] = []): Promise<News
   throw new Error(`fetchNews failed — ${reasons.join(' | ')}`);
 }
 
-export async function summarize(title: string, text: string, maxWords = 80): Promise<{ summary?: string; bullets?: string[] } | null> {
-  // Summarization remains API-based; return null on failure
-  try {
-    const res = await fetchWithTimeout(`${API_BASE}/api/summarize`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title, text, maxWords })
-    });
-    if (!res.ok) return null;
-    const j = await res.json();
-    return { summary: j.summary, bullets: j.bullets };
-  } catch {
-    return null;
-  }
-}
+// Summarization removed
 
 // DDB does not support search in your setup (only GET /items and GET /items/{id}).
 

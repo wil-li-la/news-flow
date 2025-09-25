@@ -1,4 +1,6 @@
 To-dos:
 
-先看看 這個 API 會回傳什麼 https://6on7yqwxw0.execute-api.us-east-1.amazonaws.com/prod
+Done 先看看 這個 API 會回傳什麼 https://6on7yqwxw0.execute-api.us-east-1.amazonaws.com/prod
 
+搞定 Swipepage view 有夠醜
+設定 個人登入畫面

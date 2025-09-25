@@ -4,7 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev:api": "nodemon --watch api --ext js,json api/index.js",
+    "dev:api": "node scripts/dev-api.js",
     "start": "npm run dev:api",
     "mobile:start": "concurrently \"npm run dev:api\" \"npm --prefix mobile start\"",
     "mobile:ios": "concurrently \"npm run dev:api\" \"npm --prefix mobile run ios\"",

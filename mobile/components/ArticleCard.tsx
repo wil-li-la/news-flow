@@ -9,10 +9,9 @@ type Props = {
   onPass?: () => void;
   onLike?: () => void;
   onOpenLink?: () => void;
-  summarizing?: boolean;
 };
 
-export default function ArticleCard({ article, variant = 'list', onPass, onLike, onOpenLink, summarizing }: Props) {
+export default function ArticleCard({ article, variant = 'list', onPass, onLike, onOpenLink }: Props) {
   const [img, setImg] = useState<string | null | undefined>(article.imageUrl);
   const SWIPE_CARD_HEIGHT = useMemo(() => {
     const h = Dimensions.get('window').height;
@@ -60,11 +59,6 @@ export default function ArticleCard({ article, variant = 'list', onPass, onLike,
             <Text style={styles.summary} numberOfLines={5}>
               {article.summary ?? article.description}
             </Text>
-          ) : summarizing ? (
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 8 }}>
-              <ActivityIndicator size="small" color="#2563eb" />
-              <Text style={{ color: '#475569' }}>Summarizing…</Text>
-            </View>
           ) : null}
           <View style={styles.metaRow}>
             <Text style={styles.meta}>{article.source}</Text>

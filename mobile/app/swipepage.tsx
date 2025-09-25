@@ -5,7 +5,7 @@ import { RefreshCw, Undo2 } from 'lucide-react-native';
 import SwipeCard from '../components/SwipeCard';
 import ArticleCard from '../components/ArticleCard';
 import { NewsArticle, SwipeDirection } from '../types';
-import { fetchNews, summarize } from '../lib/api';
+import { fetchNews } from '../lib/api';
 import { addSwipeAction } from '../lib/swipeStore';
 
 export default function HomeScreen() {
@@ -14,58 +14,38 @@ export default function HomeScreen() {
   const [index, setIndex] = useState(0);
   const [seen, setSeen] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState({ liked: 0, passed: 0 });
-  const [summarizingIds, setSummarizingIds] = useState<Set<string>>(new Set());
+  const [error, setError] = useState<string | null>(null);
+  // Removed liked/passed status pill; no per-session stats needed
   const [isFetchingMore, setIsFetchingMore] = useState(false);
   const [history, setHistory] = useState<{ id: string; direction: SwipeDirection }[]>([]);
 
   const current = cards[index];
   const next = cards[index + 1];
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (withSeen: string[]) => {
     setLoading(true);
-    const fresh = await fetchNews(8, seen);
-    setCards(fresh);
-    setIndex(0);
-    setLoading(false);
-  }, [seen]);
+    setError(null);
+    try {
+      const fresh = await fetchNews(8, withSeen);
+      setCards(fresh);
+      setIndex(0);
+    } catch (e: any) {
+      setCards([]);
+      setError(e?.message || 'Failed to load news');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
-  useEffect(() => { load(); }, [load]);
+  // Initial load once on mount (no seen items yet)
+  useEffect(() => { load([]); }, [load]);
 
-  // Summarize articles missing summary via backend OpenAI API
-  useEffect(() => {
-    const pending = cards.filter(a => !a.summary && a.description && a.description.length > 0);
-    if (pending.length === 0) return;
-
-    let cancelled = false;
-    (async () => {
-      const updates: Record<string, { summary?: string; bullets?: string[] }> = {};
-      for (const a of pending) {
-        if (cancelled) return;
-        if (summarizingIds.has(a.id)) continue;
-        // Guard state updates when unmounted
-        setSummarizingIds(prev => {
-          if (cancelled) return prev;
-          const next = new Set(prev);
-          next.add(a.id);
-          return next;
-        });
-        const out = await summarize(a.title, a.description || '', 80);
-        if (cancelled) return;
-        if (out?.summary) updates[a.id] = out;
-      }
-      if (!cancelled && Object.keys(updates).length) {
-        setCards(prev => prev.map(a => (updates[a.id] ? { ...a, ...updates[a.id] } : a)));
-      }
-    })();
-
-    return () => { cancelled = true; };
-  }, [cards, summarizingIds]);
+  // Summarization disabled
 
   const onSwipe = useCallback((dir: SwipeDirection) => {
     if (!current) return;
-    setStats((s) => ({ liked: s.liked + (dir === 'right' ? 1 : 0), passed: s.passed + (dir === 'left' ? 1 : 0) }));
-    setSeen(prev => [...prev, current.id]);
+    const newSeen = [...seen, current.id];
+    setSeen(newSeen);
     setHistory(prev => [...prev, { id: current.id, direction: dir }]);
     // record swipe for knowledge network
     addSwipeAction({ articleId: current.id, direction: dir, article: current });
@@ -76,7 +56,7 @@ export default function HomeScreen() {
         try {
           setIsFetchingMore(true);
           const existingIds = new Set(cards.map(c => c.id));
-          const more = await fetchNews(8, [...seen, ...cards.map(c => c.id)]);
+          const more = await fetchNews(8, [...newSeen, ...cards.map(c => c.id)]);
           const unique = more.filter(a => !existingIds.has(a.id));
           if (unique.length) setCards(prev => [...prev, ...unique]);
         } finally {
@@ -88,7 +68,7 @@ export default function HomeScreen() {
     if (index < cards.length - 1) {
       setIndex(prev => prev + 1);
     } else {
-      load();
+      load(newSeen);
     }
   }, [cards.length, current, index, isFetchingMore, load, seen]);
 
@@ -97,7 +77,6 @@ export default function HomeScreen() {
     const last = history[history.length - 1];
     setHistory(prev => prev.slice(0, -1));
     setSeen(prev => prev.slice(0, -1));
-    setStats(s => last.direction === 'right' ? { ...s, liked: Math.max(0, s.liked - 1) } : { ...s, passed: Math.max(0, s.passed - 1) });
     setIndex(prev => Math.max(0, prev - 1));
   }, [history, index]);
 
@@ -120,26 +99,31 @@ export default function HomeScreen() {
         </View>
       );
     }
+    if (error) {
+      return (
+        <View style={styles.centered}>
+          <Text style={styles.emptyTitle}>Failed to load</Text>
+          <Text style={styles.loadingText}>{error}</Text>
+          <Pressable style={styles.refreshBtn} onPress={() => load(seen)}><Text style={styles.refreshBtnText}>Retry</Text></Pressable>
+        </View>
+      );
+    }
     if (!current) {
       return (
         <View style={styles.centered}>
           <Text style={styles.emptyTitle}>No more articles</Text>
-          <Pressable style={styles.refreshBtn} onPress={load}><Text style={styles.refreshBtnText}>Refresh</Text></Pressable>
+          <Pressable style={styles.refreshBtn} onPress={() => load(seen)}><Text style={styles.refreshBtnText}>Refresh</Text></Pressable>
         </View>
       );
     }
 
     const visible = cards.slice(index, index + 3);
 
-    const nextScale = deckProgress.interpolate({ inputRange: [0, 1], outputRange: [0.97, 1.0], extrapolate: 'clamp' });
-    const nextTranslateY = deckProgress.interpolate({ inputRange: [0, 1], outputRange: [10, 0], extrapolate: 'clamp' });
-    const thirdScale = deckProgress.interpolate({ inputRange: [0, 1], outputRange: [0.94, 0.97], extrapolate: 'clamp' });
-    const thirdTranslateY = deckProgress.interpolate({ inputRange: [0, 1], outputRange: [18, 10], extrapolate: 'clamp' });
-
     const layerStyle = (pos: number): any[] => {
-      if (pos === 0) return [styles.cardWrapper, styles.currentCard, { elevation: 6 }];
-      if (pos === 1) return [styles.cardWrapper, { zIndex: 1, transform: [{ scale: nextScale }, { translateY: nextTranslateY }], elevation: 4 }];
-      return [styles.cardWrapper, { zIndex: 0, transform: [{ scale: thirdScale }, { translateY: thirdTranslateY }], opacity: 0.9, elevation: 3 }];
+      // All cards overlap exactly; only zIndex/elevation differs
+      if (pos === 0) return [styles.cardWrapper, styles.currentCard, { zIndex: 2, elevation: 6 }];
+      if (pos === 1) return [styles.cardWrapper, { zIndex: 1, elevation: 4 }];
+      return [styles.cardWrapper, { zIndex: 0, elevation: 3 }];
     };
 
     return (
@@ -162,7 +146,6 @@ export default function HomeScreen() {
                     onPass={() => onSwipe('left')}
                     onLike={() => onSwipe('right')}
                     onOpenLink={() => { if (a?.url) Linking.openURL(a.url).catch(() => {}); }}
-                    summarizing={summarizingIds.has(a.id)}
                   />
                 </SwipeCard>
               </Animated.View>
@@ -170,13 +153,13 @@ export default function HomeScreen() {
           }
           return (
             <Animated.View key={key} style={layerStyle(pos)} pointerEvents="none">
-              <ArticleCard variant="swipe" article={a} summarizing={summarizingIds.has(a.id)} />
+              <ArticleCard variant="swipe" article={a} />
             </Animated.View>
           );
         }).reverse()}
       </View>
     );
-  }, [loading, current, cards, index, onSwipe, load, summarizingIds, deckProgress]);
+  }, [loading, current, cards, index, onSwipe, load, deckProgress]);
 
   // Respect bottom tab bar so controls aren't hidden
   const BOTTOM_BAR_HEIGHT = 64;
@@ -187,7 +170,7 @@ export default function HomeScreen() {
     <View style={styles.container}>
       {/* Top app bar within safe area */}
       <View style={[styles.appBar, { paddingTop: insets.top + 10 }]}> 
-        <Pressable onPress={load} style={[styles.iconBtn, { backgroundColor: '#e2e8f0' }]} accessibilityRole="button" accessibilityLabel="Refresh">
+        <Pressable onPress={() => load(seen)} style={[styles.iconBtn, { backgroundColor: '#e2e8f0' }]} accessibilityRole="button" accessibilityLabel="Refresh">
           <RefreshCw color="#0f172a" size={16} />
         </Pressable>
         <Text style={styles.appBarTitle}>For You</Text>
@@ -196,15 +179,7 @@ export default function HomeScreen() {
         </Pressable>
       </View>
 
-      {/* Subheader status pill */}
-      <View style={styles.subHeader}>
-        <View style={styles.statusPill}>
-          <Text style={styles.statusText}>{Math.min(index + 1, cards.length)}/{cards.length}</Text>
-          <View style={{ width: 1, height: 14, backgroundColor: '#cbd5e1', marginHorizontal: 8 }} />
-          <Text style={[styles.statusText, { color: '#16a34a' }]}>♥ {stats.liked}</Text>
-          <Text style={[styles.statusText, { color: '#ef4444', marginLeft: 8 }]}>✕ {stats.passed}</Text>
-        </View>
-      </View>
+      {/* Status pill removed for immersive UI */}
 
       {/* Card deck */}
       <View style={[styles.deck, { paddingBottom }]}>
@@ -237,7 +212,7 @@ const styles = StyleSheet.create({
     shadowRadius: 3,
     elevation: 3
   },
-  subHeader: { paddingHorizontal: 16, paddingBottom: 8, alignItems: 'center' },
+  // subHeader removed
   deck: { flex: 1, paddingHorizontal: 16, position: 'relative' },
   cardStack: {
     flex: 1,
@@ -246,9 +221,14 @@ const styles = StyleSheet.create({
   },
   cardWrapper: {
     position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
     width: '100%',
     maxWidth: 600,
     alignSelf: 'center',
+    justifyContent: 'center',
     borderRadius: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -297,24 +277,5 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     fontSize: 16
   },
-  statusPill: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    backgroundColor: 'rgba(255,255,255,0.95)', 
-    paddingHorizontal: 12, 
-    height: 36, 
-    borderRadius: 999, 
-    borderWidth: 1, 
-    borderColor: '#e2e8f0',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 2
-  },
-  statusText: { 
-    fontSize: 13, 
-    color: '#0f172a', 
-    fontWeight: '600' 
-  },
+  // status pill styles removed
 });

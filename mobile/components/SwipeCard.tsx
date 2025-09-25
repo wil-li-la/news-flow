@@ -52,16 +52,13 @@ export default function SwipeCard({ isActive, onSwipeLeft, onSwipeRight, childre
   const opacity = translate.x.interpolate({ inputRange: [-200, 0, 200], outputRange: [0.85, 1, 0.85] });
   const likeOpacity = translate.x.interpolate({ inputRange: [30, 120], outputRange: [0, 1], extrapolate: 'clamp' });
   const passOpacity = translate.x.interpolate({ inputRange: [-120, -30], outputRange: [1, 0], extrapolate: 'clamp' });
-  const scale = isActive ? 1 : 0.97;
 
   // Build transforms explicitly to avoid invalid empty transform objects warning
   const transforms: any[] = [
     { translateX: translate.x },
     { translateY: translate.y },
     { rotate },
-    { scale },
   ];
-  if (!isActive) transforms.push({ translateY: 10 });
 
   return (
     <Animated.View
@@ -89,8 +86,12 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 0,
     right: 0,
+    top: 0,
+    bottom: 0,
   },
   shadow: {
+    flex: 1,
+    justifyContent: 'center',
     shadowColor: '#000',
     shadowOpacity: 0.1,
     shadowOffset: { width: 0, height: 6 },
