@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { ActivityIndicator, Dimensions, Image, Linking, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { ExternalLink, Heart, X } from 'lucide-react-native';
 import { NewsArticle } from '../types';
+import { colors, spacing, typography, shadows, borderRadius } from '../lib/design';
 
 type Props = {
   article: NewsArticle;
@@ -71,17 +72,17 @@ export default function ArticleCard({ article, variant = 'list', onPass, onLike,
         {/* Bottom 1/3: Controls */}
         <View style={styles.thirdBottom}>
           <View style={styles.controlsRow}>
-            <Pressable onPress={onPass} style={[styles.ctrlBtn, { backgroundColor: '#fee2e2' }]}> 
-              <X color="#ef4444" size={22} />
+            <Pressable onPress={onPass} style={[styles.ctrlBtn, { backgroundColor: colors.errorLight }]}> 
+              <X color={colors.error} size={22} />
             </Pressable>
             <Pressable
               onPress={onOpenLink || (() => { if (article.url) Linking.openURL(article.url).catch(() => {}); })}
-              style={[styles.ctrlBtn, { backgroundColor: '#e0e7ff' }]}
+              style={[styles.ctrlBtn, { backgroundColor: colors.infoLight }]}
             >
-              <ExternalLink color="#4338ca" size={22} />
+              <ExternalLink color={colors.primaryDark} size={22} />
             </Pressable>
-            <Pressable onPress={onLike} style={[styles.ctrlBtn, { backgroundColor: '#dcfce7' }]}> 
-              <Heart color="#16a34a" size={22} />
+            <Pressable onPress={onLike} style={[styles.ctrlBtn, { backgroundColor: colors.successLight }]}> 
+              <Heart color={colors.success} size={22} />
             </Pressable>
           </View>
         </View>
@@ -134,28 +135,29 @@ function formatDate(iso?: string | null) {
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
+    backgroundColor: colors.white,
+    borderRadius: borderRadius.lg,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: '#eee',
+    borderColor: colors.gray200,
+    ...shadows.md,
   },
   // Swipe variant thirds
   thirdTop: { flex: 1, position: 'relative', padding: 10 },
   thirdMiddle: { flex: 1, paddingHorizontal: 16, paddingBottom: 8 },
   thirdBottom: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingBottom: 12 },
-  topImage: { width: '100%', aspectRatio: 4/3, borderRadius: 12, alignSelf: 'center' } as any,
+  topImage: { width: '100%', aspectRatio: 4/3, borderRadius: borderRadius.md, alignSelf: 'center' } as any,
   controlsRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-evenly', width: '100%', paddingHorizontal: 24 },
-  ctrlBtn: { width: 64, height: 64, borderRadius: 32, alignItems: 'center', justifyContent: 'center' },
+  ctrlBtn: { width: 64, height: 64, borderRadius: borderRadius.full, alignItems: 'center', justifyContent: 'center', ...shadows.sm },
   imageWrap: { position: 'relative' },
   image: { width: '100%', height: Math.round(Math.max(320, Math.min(520, Dimensions.get('window').height * 0.55))) } as any,
-  imagePlaceholder: { backgroundColor: '#f0f0f0' },
-  content: { padding: 16, paddingBottom: 24 },
-  title: { fontSize: 18, fontWeight: '700', color: '#111' },
-  summary: { marginTop: 8, fontSize: 14, lineHeight: 20, color: '#444' },
-  metaRow: { marginTop: 12, flexDirection: 'row', justifyContent: 'space-between' },
-  meta: { fontSize: 12, color: '#777' },
-  categoryPill: { position: 'absolute', left: 12, top: 12, backgroundColor: 'rgba(0,0,0,0.5)', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999 },
-  categoryText: { color: 'white', fontSize: 12, fontWeight: '600' },
-  bullet: { color: '#334155', fontSize: 14, lineHeight: 20 }
+  imagePlaceholder: { backgroundColor: colors.gray100 },
+  content: { padding: spacing.lg, paddingBottom: spacing.xxl },
+  title: { ...typography.h3, color: colors.gray900 },
+  summary: { marginTop: spacing.sm, ...typography.small, color: colors.gray700 },
+  metaRow: { marginTop: spacing.md, flexDirection: 'row', justifyContent: 'space-between' },
+  meta: { ...typography.caption, color: colors.gray500 },
+  categoryPill: { position: 'absolute', left: spacing.md, top: spacing.md, backgroundColor: 'rgba(0,0,0,0.7)', paddingHorizontal: spacing.sm, paddingVertical: 6, borderRadius: borderRadius.full },
+  categoryText: { color: colors.white, ...typography.captionMedium },
+  bullet: { color: colors.gray700, ...typography.small }
 });

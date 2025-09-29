@@ -7,6 +7,7 @@ import ArticleCard from '../components/ArticleCard';
 import { NewsArticle, SwipeDirection } from '../types';
 import { fetchNews } from '../lib/api';
 import { addSwipeAction } from '../lib/swipeStore';
+import { colors, spacing, typography, shadows, borderRadius } from '../lib/design';
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
@@ -94,7 +95,7 @@ export default function HomeScreen() {
     if (loading) {
       return (
         <View style={styles.centered}>
-          <ActivityIndicator size="large" color="#2563eb" />
+          <ActivityIndicator size="large" color={colors.primary} />
           <Text style={styles.loadingText}>Loading fresh news…</Text>
         </View>
       );
@@ -170,12 +171,12 @@ export default function HomeScreen() {
     <View style={styles.container}>
       {/* Top app bar within safe area */}
       <View style={[styles.appBar, { paddingTop: insets.top + 10 }]}> 
-        <Pressable onPress={() => load(seen)} style={[styles.iconBtn, { backgroundColor: '#e2e8f0' }]} accessibilityRole="button" accessibilityLabel="Refresh">
-          <RefreshCw color="#0f172a" size={16} />
+        <Pressable onPress={() => load(seen)} style={[styles.iconBtn, { backgroundColor: colors.gray200 }]} accessibilityRole="button" accessibilityLabel="Refresh">
+          <RefreshCw color={colors.gray900} size={16} />
         </Pressable>
         <Text style={styles.appBarTitle}>For You</Text>
-        <Pressable onPress={goPrev} style={[styles.iconBtn, { backgroundColor: '#0ea5e9' }]} accessibilityRole="button" accessibilityLabel="Undo last swipe">
-          <Undo2 color="#fff" size={16} />
+        <Pressable onPress={goPrev} style={[styles.iconBtn, { backgroundColor: colors.info }]} accessibilityRole="button" accessibilityLabel="Undo last swipe">
+          <Undo2 color={colors.white} size={16} />
         </Pressable>
       </View>
 
@@ -190,27 +191,23 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f1f5f9' },
+  container: { flex: 1, backgroundColor: colors.gray100 },
   appBar: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingBottom: 8,
-    backgroundColor: '#f1f5f9',
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.sm,
+    backgroundColor: colors.gray100,
   },
-  appBarTitle: { fontSize: 18, fontWeight: '800', color: '#0f172a' },
+  appBarTitle: { ...typography.h3, color: colors.gray900 },
   iconBtn: { 
     width: 36, 
     height: 36, 
-    borderRadius: 18, 
+    borderRadius: borderRadius.full, 
     alignItems: 'center', 
     justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 3
+    ...shadows.sm,
   },
   // subHeader removed
   deck: { flex: 1, paddingHorizontal: 16, position: 'relative' },
@@ -251,31 +248,25 @@ const styles = StyleSheet.create({
     justifyContent: 'center' 
   },
   loadingText: { 
-    marginTop: 12, 
-    color: '#475569',
-    fontSize: 16
+    marginTop: spacing.md, 
+    color: colors.gray600,
+    ...typography.body,
   },
   emptyTitle: { 
-    fontSize: 18, 
-    fontWeight: '700', 
-    color: '#0f172a', 
-    marginBottom: 16 
+    ...typography.h3, 
+    color: colors.gray900, 
+    marginBottom: spacing.lg,
   },
   refreshBtn: { 
-    paddingHorizontal: 16, 
-    paddingVertical: 12, 
-    backgroundColor: '#2563eb', 
-    borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 3
+    paddingHorizontal: spacing.lg, 
+    paddingVertical: spacing.md, 
+    backgroundColor: colors.primary, 
+    borderRadius: borderRadius.md,
+    ...shadows.sm,
   },
   refreshBtnText: { 
-    color: 'white', 
-    fontWeight: '700',
-    fontSize: 16
+    color: colors.white, 
+    ...typography.bodySemibold,
   },
   // status pill styles removed
 });

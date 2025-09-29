@@ -6,6 +6,7 @@ import { Clock, Search as SearchIcon, TrendingUp } from 'lucide-react-native';
 import ArticleCard from '../components/ArticleCard';
 import { searchNewsApi } from '../lib/api';
 import { NewsArticle } from '../types';
+import { colors, spacing, typography, shadows, borderRadius } from '../lib/design';
 
 export default function SearchScreen() {
   const router = useRouter();
@@ -59,7 +60,7 @@ export default function SearchScreen() {
   const BOTTOM_BAR_MARGIN = 12;
   const paddingBottom = insets.bottom + BOTTOM_BAR_HEIGHT + BOTTOM_BAR_MARGIN + 16;
   return (
-    <View style={{ flex: 1, backgroundColor: 'white' }}>
+    <View style={{ flex: 1, backgroundColor: colors.white }}>
       <Stack.Screen options={{ headerShown: false }} />
       <View style={[styles.header, { paddingTop: insets.top + 10 }]}> 
         <Pressable onPress={handleBack} style={styles.backBtn}><Text style={styles.backText}>Back</Text></Pressable>
@@ -81,7 +82,7 @@ export default function SearchScreen() {
       </View>
       {loading ? (
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-          <ActivityIndicator size="large" color="#2563eb" />
+          <ActivityIndicator size="large" color={colors.primary} />
         </View>
       ) : (
         <View style={{ flex: 1 }}>
@@ -150,17 +151,75 @@ export default function SearchScreen() {
 }
 
 const styles = StyleSheet.create({
-  header: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 12, borderBottomWidth: 1, borderBottomColor: '#eee' },
-  backBtn: { paddingHorizontal: 10, paddingVertical: 6, backgroundColor: '#f1f5f9', borderRadius: 10 },
-  backText: { color: '#0f172a', fontWeight: '600' },
-  title: { fontSize: 18, fontWeight: '800', color: '#111' },
-  searchRow: { flexDirection: 'row', alignItems: 'center', gap: 8, padding: 12 },
-  input: { flex: 1, backgroundColor: '#f8fafc', paddingHorizontal: 12, paddingVertical: 10, borderRadius: 10, borderWidth: 1, borderColor: '#e2e8f0' },
-  searchBtn: { width: 44, height: 40, backgroundColor: '#2563eb', borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
-  empty: { color: '#64748b', textAlign: 'center', marginTop: 24 },
-  sectionTitle: { fontSize: 14, fontWeight: '600', color: '#334155' },
-  suggestionBtn: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#f8fafc', paddingHorizontal: 12, paddingVertical: 12, borderRadius: 10, borderWidth: 1, borderColor: '#e2e8f0' },
-  popularPill: { paddingHorizontal: 10, paddingVertical: 8, backgroundColor: '#dbeafe', borderRadius: 999 },
-  popularText: { color: '#1d4ed8', fontWeight: '600' },
-  historyBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#f8fafc', paddingHorizontal: 12, paddingVertical: 12, borderRadius: 10, borderWidth: 1, borderColor: '#e2e8f0' }
+  header: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    gap: spacing.md, 
+    padding: spacing.md, 
+    borderBottomWidth: 1, 
+    borderBottomColor: colors.gray200 
+  },
+  backBtn: { 
+    paddingHorizontal: spacing.sm, 
+    paddingVertical: 6, 
+    backgroundColor: colors.gray100, 
+    borderRadius: borderRadius.sm 
+  },
+  backText: { color: colors.gray900, ...typography.bodySemibold },
+  title: { ...typography.h3, color: colors.gray900 },
+  searchRow: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    gap: spacing.sm, 
+    padding: spacing.md 
+  },
+  input: { 
+    flex: 1, 
+    backgroundColor: colors.gray50, 
+    paddingHorizontal: spacing.md, 
+    paddingVertical: spacing.sm, 
+    borderRadius: borderRadius.sm, 
+    borderWidth: 1, 
+    borderColor: colors.gray200,
+    ...typography.body,
+  },
+  searchBtn: { 
+    width: 44, 
+    height: 40, 
+    backgroundColor: colors.primary, 
+    borderRadius: borderRadius.sm, 
+    alignItems: 'center', 
+    justifyContent: 'center' 
+  },
+  empty: { color: colors.gray500, textAlign: 'center', marginTop: spacing.xxl, ...typography.body },
+  sectionTitle: { ...typography.smallMedium, color: colors.gray700 },
+  suggestionBtn: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    gap: spacing.sm, 
+    backgroundColor: colors.gray50, 
+    paddingHorizontal: spacing.md, 
+    paddingVertical: spacing.md, 
+    borderRadius: borderRadius.sm, 
+    borderWidth: 1, 
+    borderColor: colors.gray200 
+  },
+  popularPill: { 
+    paddingHorizontal: spacing.sm, 
+    paddingVertical: spacing.sm, 
+    backgroundColor: colors.infoLight, 
+    borderRadius: borderRadius.full 
+  },
+  popularText: { color: colors.primaryDark, ...typography.captionMedium },
+  historyBtn: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    justifyContent: 'space-between', 
+    backgroundColor: colors.gray50, 
+    paddingHorizontal: spacing.md, 
+    paddingVertical: spacing.md, 
+    borderRadius: borderRadius.sm, 
+    borderWidth: 1, 
+    borderColor: colors.gray200 
+  }
 });

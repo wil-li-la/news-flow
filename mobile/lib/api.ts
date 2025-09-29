@@ -63,7 +63,20 @@ function toMessage(e: unknown): string {
   try { return JSON.stringify(e); } catch { return String(e); }
 }
 
+function isValidUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    const allowedHosts = ['localhost', '127.0.0.1', '10.0.2.2'];
+    return allowedHosts.includes(parsed.hostname) || parsed.hostname.endsWith('.amazonaws.com');
+  } catch {
+    return false;
+  }
+}
+
 async function fetchWithTimeout(url: string, init?: RequestInit, ms = 8000) {
+  if (!isValidUrl(url)) {
+    throw new Error(`Invalid or disallowed URL: ${url}`);
+  }
   const ctrl = new AbortController();
   const t = setTimeout(() => ctrl.abort(), ms);
   try {

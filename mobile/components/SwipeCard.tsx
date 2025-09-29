@@ -53,8 +53,8 @@ export default function SwipeCard({ isActive, onSwipeLeft, onSwipeRight, childre
   const likeOpacity = translate.x.interpolate({ inputRange: [30, 120], outputRange: [0, 1], extrapolate: 'clamp' });
   const passOpacity = translate.x.interpolate({ inputRange: [-120, -30], outputRange: [1, 0], extrapolate: 'clamp' });
 
-  // Build transforms explicitly to avoid invalid empty transform objects warning
-  const transforms: any[] = [
+  // Build transforms with proper typing
+  const transforms = [
     { translateX: translate.x },
     { translateY: translate.y },
     { rotate },

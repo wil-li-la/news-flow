@@ -11,7 +11,7 @@ let state: Preferences = {
 const listeners = new Set<Listener>();
 
 export function getPreferences(): Preferences {
-  return state;
+  return { ...state };
 }
 
 export function setPersonalizedRatio(ratio: number) {
