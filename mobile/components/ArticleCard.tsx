@@ -56,9 +56,9 @@ export default function ArticleCard({ article, variant = 'list', onPass, onLike,
                 <Text key={i} style={styles.bullet} numberOfLines={1}>• {b}</Text>
               ))}
             </View>
-          ) : !!(article.summary ?? article.description) ? (
+          ) : !!(article.structuredSummary ?? article.summary ?? article.description) ? (
             <Text style={styles.summary} numberOfLines={5}>
-              {article.summary ?? article.description}
+              {article.structuredSummary ?? article.summary ?? article.description}
             </Text>
           ) : null}
           <View style={styles.metaRow}>
@@ -105,9 +105,9 @@ export default function ArticleCard({ article, variant = 'list', onPass, onLike,
       </View>
       <View style={styles.content}>
         <Text style={styles.title}>{article.title}</Text>
-        {!!(article.summary ?? article.description) && (
+        {!!(article.structuredSummary ?? article.summary ?? article.description) && (
           <Text style={styles.summary} numberOfLines={4}>
-            {article.summary ?? article.description}
+            {article.structuredSummary ?? article.summary ?? article.description}
           </Text>
         )}
         <View style={styles.metaRow}>

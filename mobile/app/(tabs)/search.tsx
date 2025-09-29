@@ -3,7 +3,7 @@ import { Stack, useRouter } from 'expo-router';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Clock, Search as SearchIcon, TrendingUp } from 'lucide-react-native';
-import ArticleCard from '../../components/ArticleCard';
+import CompactArticleCard from '../../components/CompactArticleCard';
 import { searchNewsApi } from '../../lib/api';
 import { NewsArticle } from '../../types';
 import { colors, spacing, typography, shadows, borderRadius } from '../../lib/design';
@@ -138,11 +138,11 @@ export default function SearchScreen() {
           <FlatList
             data={results}
             keyExtractor={(item) => item.id}
-            contentContainerStyle={{ padding: 16, gap: 16, paddingBottom }}
+            contentContainerStyle={{ padding: 16, gap: 8, paddingBottom }}
             renderItem={({ item }) => (
-              <ArticleCard article={item} />
+              <CompactArticleCard article={item} />
             )}
-            ListEmptyComponent={<Text style={styles.empty}>Try a search to see results</Text>}
+            ListEmptyComponent={q.length > 0 ? <Text style={styles.empty}>No results found. Try different keywords.</Text> : <Text style={styles.empty}>Try a search to see results</Text>}
           />
         </View>
       )}

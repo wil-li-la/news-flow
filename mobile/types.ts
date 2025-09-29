@@ -7,6 +7,7 @@ export interface NewsArticle {
   description?: string;
   publishedAt?: string | null;
   summary?: string;
+  structuredSummary?: string;
   bullets?: string[];
   category?: string;
   region?: string;
