@@ -32,7 +32,7 @@ export default function SearchScreen() {
   };
 
   const popular = useMemo(
-    () => ['ChatGPT', 'Warren Buffett', 'Climate Change', 'Quantum Computing', 'Renewable Energy', 'AI Ethics', 'Tesla', 'Space Exploration', 'Cryptocurrency', 'Medical Breakthroughs'],
+    () => ['OpenAI', 'Tesla', 'Apple', 'Google', 'Microsoft', 'Meta', 'Bitcoin', 'Climate Change', 'Donald Trump', 'Ukraine War', 'NVIDIA', 'SpaceX'],
     []
   );
 

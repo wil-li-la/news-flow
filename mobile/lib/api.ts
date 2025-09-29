@@ -1,7 +1,7 @@
 import { NewsArticle } from '../types';
 
 const ENV = (globalThis as any)?.process?.env || {};
-const API_BASE: string = ENV.EXPO_PUBLIC_API_BASE_URL || 'https://q3lk8gn1ni.execute-api.us-east-1.amazonaws.com';
+const API_BASE: string = ENV.EXPO_PUBLIC_API_BASE_URL || 'https://a08y6nfdj0.execute-api.ap-southeast-2.amazonaws.com/prod';
 
 function hostnameOf(u?: string | null): string | null {
   if (!u) return null;
