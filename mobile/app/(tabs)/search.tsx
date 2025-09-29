@@ -3,10 +3,10 @@ import { Stack, useRouter } from 'expo-router';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Clock, Search as SearchIcon, TrendingUp } from 'lucide-react-native';
-import ArticleCard from '../components/ArticleCard';
-import { searchNewsApi } from '../lib/api';
-import { NewsArticle } from '../types';
-import { colors, spacing, typography, shadows, borderRadius } from '../lib/design';
+import ArticleCard from '../../components/ArticleCard';
+import { searchNewsApi } from '../../lib/api';
+import { NewsArticle } from '../../types';
+import { colors, spacing, typography, shadows, borderRadius } from '../../lib/design';
 
 export default function SearchScreen() {
   const router = useRouter();

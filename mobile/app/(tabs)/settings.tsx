@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { View, Text, TextInput, Pressable, StyleSheet, ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { colors, spacing, typography, shadows, borderRadius } from '../lib/design';
+import { colors, spacing, typography, shadows, borderRadius } from '../../lib/design';
 import {
   signIn,
   signUp,

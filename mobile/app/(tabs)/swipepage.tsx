@@ -2,12 +2,12 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ActivityIndicator, Animated, Image, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { RefreshCw, Undo2 } from 'lucide-react-native';
-import SwipeCard from '../components/SwipeCard';
-import ArticleCard from '../components/ArticleCard';
-import { NewsArticle, SwipeDirection } from '../types';
-import { fetchNews } from '../lib/api';
-import { addSwipeAction } from '../lib/swipeStore';
-import { colors, spacing, typography, shadows, borderRadius } from '../lib/design';
+import SwipeCard from '../../components/SwipeCard';
+import ArticleCard from '../../components/ArticleCard';
+import { NewsArticle, SwipeDirection } from '../../types';
+import { fetchNews } from '../../lib/api';
+import { addSwipeAction } from '../../lib/swipeStore';
+import { colors, spacing, typography, shadows, borderRadius } from '../../lib/design';
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
