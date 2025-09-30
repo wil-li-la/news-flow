@@ -14,3 +14,60 @@ Done apply scoring and news feed algorithm
 - No category/source preferences: preferredCategories and preferredSources are defined but not used
 - No recommendation engine: user activities aren't analyzed to influence article selection
 - No content scoring: articles aren't ranked based on user preferences
+
+## CUSTOMIZED NEWS FEED IMPLEMENTATION PLAN
+
+### Phase 1: Core Personalization Algorithm
+1. **Create scoring service** (`api/services/scoringService.js`)
+   - Calculate user preference scores based on activity history
+   - Weight articles by category, source, and engagement patterns
+   - Apply customization level multiplier (0-100%)
+
+2. **Update news API endpoint** (`api/routes/news.js`)
+   - Add userId parameter to news fetch
+   - Integrate scoring service to rank articles
+   - Return personalized feed based on user preferences
+
+### Phase 2: User Preference Enhancement
+3. **Add category/source preference UI** (`mobile/app/(tabs)/settings.tsx`)
+   - Multi-select for preferred categories
+   - Multi-select for preferred sources
+   - Save to UserPreferences model
+
+4. **Update user service** (`mobile/lib/userService.ts`)
+   - Add methods for category/source preferences
+   - Update preference sync logic
+
+### Phase 3: Smart Recommendation Engine
+5. **Implement recommendation logic** (`api/services/recommendationService.js`)
+   - Analyze user activity patterns (liked categories, sources, times)
+   - Create user profile vectors
+   - Content-based filtering algorithm
+   - Collaborative filtering (future enhancement)
+
+6. **Add article metadata enhancement** (`api/services/rssIngestor.js`)
+   - Better category classification
+   - Source reputation scoring
+   - Content similarity detection
+
+### Phase 4: Advanced Features
+7. **Real-time preference learning**
+   - Update user preferences based on swipe patterns
+   - Decay old preferences over time
+   - A/B test different recommendation strategies
+
+8. **Performance optimization**
+   - Cache user profiles
+   - Pre-compute article scores
+   - Implement efficient ranking algorithms
+
+### Implementation Priority:
+- **HIGH**: Items 1-2 (Core personalization)
+- **MEDIUM**: Items 3-4 (UI preferences)  
+- **LOW**: Items 5-8 (Advanced features)
+
+### Success Metrics:
+- User engagement time increase
+- Swipe-right rate improvement
+- Session length extension
+- User retention improvement
