@@ -24,22 +24,30 @@ export default function HomeScreen() {
   const next = cards[index + 1];
 
   const load = useCallback(async (withSeen: string[]) => {
+    console.log('🔄 SwipePage: Starting load with seen:', withSeen.length, 'items');
     setLoading(true);
     setError(null);
     try {
+      console.log('📡 SwipePage: Calling fetchNews...');
       const fresh = await fetchNews(8, withSeen);
+      console.log('✅ SwipePage: Received', fresh.length, 'articles:', fresh.map(a => ({ id: a.id, title: a.title?.slice(0, 50) })));
       setCards(fresh);
       setIndex(0);
     } catch (e: any) {
+      console.error('❌ SwipePage: Load failed:', e);
       setCards([]);
       setError(e?.message || 'Failed to load news');
     } finally {
       setLoading(false);
+      console.log('🏁 SwipePage: Load complete');
     }
   }, []);
 
   // Initial load once on mount (no seen items yet)
-  useEffect(() => { load([]); }, [load]);
+  useEffect(() => { 
+    console.log('🚀 SwipePage: Component mounted, starting initial load');
+    load([]); 
+  }, [load]);
 
   // Summarization disabled
 
@@ -92,6 +100,7 @@ export default function HomeScreen() {
   const deckProgress = useRef(new Animated.Value(0)).current; // 0..1 while dragging
 
   const content = useMemo(() => {
+    console.log('🎨 SwipePage: Rendering content - loading:', loading, 'error:', !!error, 'current:', !!current, 'cards:', cards.length);
     if (loading) {
       return (
         <View style={styles.centered}>
