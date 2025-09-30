@@ -10,4 +10,7 @@ Done User DynamoDB
 Done filter seen content
 Done apply scoring and news feed algorithm
 
-
+- No actual personalization algorithm: the news feed currently returns the same articles regardless of customization level
+- No category/source preferences: preferredCategories and preferredSources are defined but not used
+- No recommendation engine: user activities aren't analyzed to influence article selection
+- No content scoring: articles aren't ranked based on user preferences
