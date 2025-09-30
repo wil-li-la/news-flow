@@ -6,14 +6,19 @@
   "scripts": {
     "dev:api": "node scripts/dev-api.js",
     "start": "npm run dev:api",
+    "cleanup-and-fetch": "node scripts/cleanup-and-fetch.js",
+    "ios": "npm run mobile:ios",
+    "android": "npm run mobile:android",
     "mobile:start": "concurrently \"npm run dev:api\" \"npm --prefix mobile start\"",
-    "mobile:ios": "concurrently \"npm run dev:api\" \"npm --prefix mobile run ios\"",
+    "mobile:ios": "concurrently \"npm run dev:api\" \"npm --prefix mobile run ios -- --port 8082\"",
     "mobile:android": "concurrently \"npm run dev:api\" \"npm --prefix mobile run android\"",
     "start:with-api": "npm run mobile:start",
     "ios:with-api": "npm run mobile:ios",
     "android:with-api": "npm run mobile:android"
   },
   "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.0.0",
+    "@aws-sdk/lib-dynamodb": "^3.0.0",
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
     "express": "^4.18.2",

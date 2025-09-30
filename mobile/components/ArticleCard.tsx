@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { memo, useMemo, useState } from 'react';
 import { ActivityIndicator, Dimensions, Image, Linking, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { ExternalLink, Heart, X } from 'lucide-react-native';
 import { NewsArticle } from '../types';
@@ -12,8 +12,11 @@ type Props = {
   onOpenLink?: () => void;
 };
 
-export default function ArticleCard({ article, variant = 'list', onPass, onLike, onOpenLink }: Props) {
+function ArticleCard({ article, variant = 'list', onPass, onLike, onOpenLink }: Props) {
   const [img, setImg] = useState<string | null | undefined>(article.imageUrl);
+  
+  // Debug image URL
+  console.log('🖼️ ArticleCard:', article.id, 'imageUrl:', article.imageUrl, 'img state:', img);
   const SWIPE_CARD_HEIGHT = useMemo(() => {
     const h = Dimensions.get('window').height;
     return Math.round(Math.max(540, Math.min(720, h * 0.72)));
@@ -22,10 +25,8 @@ export default function ArticleCard({ article, variant = 'list', onPass, onLike,
   const thirdHeight = useMemo(() => Math.floor(SWIPE_CARD_HEIGHT / 3) - 20, [SWIPE_CARD_HEIGHT]);
   const maxImgWidth = useMemo(() => Math.floor(thirdHeight / 0.75), [thirdHeight]); // 4:3 => w = h / 0.75
   const topImageSize = useMemo(() => {
-    const w = Math.min(CARD_WIDTH - 20, maxImgWidth);
-    const h = Math.round(w * 0.75);
-    return { width: w, height: h };
-  }, [CARD_WIDTH, maxImgWidth]);
+    return { width: CARD_WIDTH, height: thirdHeight };
+  }, [CARD_WIDTH, thirdHeight]);
 
   if (variant === 'swipe') {
     return (
@@ -37,7 +38,11 @@ export default function ArticleCard({ article, variant = 'list', onPass, onLike,
               source={{ uri: img }}
               style={[styles.topImage, topImageSize]}
               resizeMode="cover"
-              onError={() => setImg(null)}
+              onError={(error) => {
+                console.log('❌ Image load error for:', img, 'Error:', error.nativeEvent?.error);
+                setImg(null);
+              }}
+              onLoad={() => console.log('✅ Image loaded successfully:', img)}
             />
           ) : (
             <View style={[styles.topImage, styles.imagePlaceholder, topImageSize]} />
@@ -77,9 +82,9 @@ export default function ArticleCard({ article, variant = 'list', onPass, onLike,
             </Pressable>
             <Pressable
               onPress={onOpenLink || (() => { if (article.url) Linking.openURL(article.url).catch(() => {}); })}
-              style={[styles.ctrlBtn, { backgroundColor: colors.infoLight }]}
+              style={[styles.ctrlBtn, { backgroundColor: colors.gray100 }]}
             >
-              <ExternalLink color={colors.primaryDark} size={22} />
+              <ExternalLink color={colors.primary} size={22} />
             </Pressable>
             <Pressable onPress={onLike} style={[styles.ctrlBtn, { backgroundColor: colors.successLight }]}> 
               <Heart color={colors.success} size={22} />
@@ -95,7 +100,16 @@ export default function ArticleCard({ article, variant = 'list', onPass, onLike,
     <View style={styles.card}>
       <View style={styles.imageWrap}>
         {img ? (
-          <Image source={{ uri: img }} style={styles.image} resizeMode="cover" onError={() => setImg(null)} />
+          <Image 
+            source={{ uri: img }} 
+            style={styles.image} 
+            resizeMode="cover" 
+            onError={(error) => {
+              console.log('❌ List image load error for:', img, 'Error:', error.nativeEvent?.error);
+              setImg(null);
+            }}
+            onLoad={() => console.log('✅ List image loaded successfully:', img)}
+          />
         ) : (
           <View style={[styles.image, styles.imagePlaceholder]} />
         )}
@@ -143,10 +157,10 @@ const styles = StyleSheet.create({
     ...shadows.md,
   },
   // Swipe variant thirds
-  thirdTop: { flex: 1, position: 'relative', padding: 10 },
+  thirdTop: { flex: 1, position: 'relative' },
   thirdMiddle: { flex: 1, paddingHorizontal: 16, paddingBottom: 8 },
   thirdBottom: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingBottom: 12 },
-  topImage: { width: '100%', aspectRatio: 4/3, borderRadius: borderRadius.md, alignSelf: 'center' } as any,
+  topImage: { width: '100%', height: '100%', borderTopLeftRadius: borderRadius.lg, borderTopRightRadius: borderRadius.lg } as any,
   controlsRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-evenly', width: '100%', paddingHorizontal: 24 },
   ctrlBtn: { width: 64, height: 64, borderRadius: borderRadius.full, alignItems: 'center', justifyContent: 'center', ...shadows.sm },
   imageWrap: { position: 'relative' },
@@ -161,3 +175,5 @@ const styles = StyleSheet.create({
   categoryText: { color: colors.white, ...typography.captionMedium },
   bullet: { color: colors.gray700, ...typography.small }
 });
+
+export default memo(ArticleCard);

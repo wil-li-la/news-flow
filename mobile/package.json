@@ -17,7 +17,8 @@
   "dependencies": {
     "@aws-amplify/react-native": "^1.1.10",
     "@react-native-async-storage/async-storage": "^1.23.1",
-    "aws-amplify": "^6.0.0",
+    "@react-native-community/netinfo": "^11.3.1",
+    "aws-amplify": "^6.15.7",
     "expo": "~51.0.0",
     "expo-linking": "~6.3.0",
     "expo-router": "^3.5.16",

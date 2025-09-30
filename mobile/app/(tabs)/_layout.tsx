@@ -12,19 +12,18 @@ export default function TabLayout() {
         tabBarShowLabel: false,
         tabBarStyle: {
           position: 'absolute',
-          left: 16,
-          right: 16,
-          bottom: 16,
-          height: 64,
-          borderRadius: borderRadius.xl,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          height: 80,
           backgroundColor: colors.white,
           borderTopWidth: 0,
           ...shadows.lg,
-          alignItems: 'center',
-          justifyContent: 'center',
+          paddingHorizontal: 8,
         },
         tabBarItemStyle: {
           flex: 1,
+          height: 64,
           alignItems: 'center',
           justifyContent: 'center',
         },
@@ -34,7 +33,7 @@ export default function TabLayout() {
         name="search"
         options={{
           tabBarIcon: ({ focused }) => (
-            <IconPill focused={focused}><Search color={focused ? colors.white : colors.gray900} size={22} /></IconPill>
+            <IconPill focused={focused}><Search color={focused ? colors.white : colors.gray600} size={22} /></IconPill>
           ),
         }}
       />
@@ -42,7 +41,7 @@ export default function TabLayout() {
         name="swipepage"
         options={{
           tabBarIcon: ({ focused }) => (
-            <IconPill focused={focused}><Home color={focused ? colors.white : colors.gray900} size={22} /></IconPill>
+            <IconPill focused={focused}><Home color={focused ? colors.white : colors.gray600} size={22} /></IconPill>
           ),
         }}
       />
@@ -50,7 +49,7 @@ export default function TabLayout() {
         name="settings"
         options={{
           tabBarIcon: ({ focused }) => (
-            <IconPill focused={focused}><User color={focused ? colors.white : colors.gray900} size={22} /></IconPill>
+            <IconPill focused={focused}><User color={focused ? colors.white : colors.gray600} size={22} /></IconPill>
           ),
         }}
       />
@@ -63,10 +62,10 @@ function IconPill({ children, focused }: { children: React.ReactNode; focused?: 
     <View style={{
       alignItems: 'center',
       justifyContent: 'center',
-      width: 44,
-      height: 36,
-      borderRadius: 12,
-      backgroundColor: focused ? colors.gray900 : 'transparent',
+      width: 48,
+      height: 48,
+      borderRadius: borderRadius.md,
+      backgroundColor: focused ? colors.primary : 'transparent',
     }}>
       {children}
     </View>

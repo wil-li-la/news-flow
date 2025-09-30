@@ -18,7 +18,7 @@ export default function SwipeCard({ isActive, onSwipeLeft, onSwipeRight, childre
       PanResponder.create({
         onMoveShouldSetPanResponder: () => isActive,
         onPanResponderMove: (evt, gesture) => {
-          Animated.event([null, { dx: translate.x, dy: translate.y }], { useNativeDriver: false })(evt, gesture);
+          translate.setValue({ x: gesture.dx, y: gesture.dy });
           if (onDragProgress) {
             const p = Math.min(1, Math.abs(gesture.dx) / 120);
             onDragProgress(p);
@@ -27,22 +27,16 @@ export default function SwipeCard({ isActive, onSwipeLeft, onSwipeRight, childre
         onPanResponderRelease: (_evt, gesture) => {
           const threshold = 100;
           if (gesture.dx > threshold) {
-            Animated.spring(translate, { toValue: { x: 500, y: gesture.dy }, useNativeDriver: true }).start(() => {
-              onDragProgress && onDragProgress(0);
-              onSwipeRight();
-            });
+            translate.setValue({ x: 1000, y: 0 }); // Move far off screen
+            setTimeout(onSwipeRight, 16); // Wait one frame
             return;
           }
           if (gesture.dx < -threshold) {
-            Animated.spring(translate, { toValue: { x: -500, y: gesture.dy }, useNativeDriver: true }).start(() => {
-              onDragProgress && onDragProgress(0);
-              onSwipeLeft();
-            });
+            translate.setValue({ x: -1000, y: 0 }); // Move far off screen
+            setTimeout(onSwipeLeft, 16); // Wait one frame
             return;
           }
-          Animated.spring(translate, { toValue: { x: 0, y: 0 }, useNativeDriver: true }).start(() => {
-            onDragProgress && onDragProgress(0);
-          });
+          Animated.spring(translate, { toValue: { x: 0, y: 0 }, useNativeDriver: true }).start();
         }
       }),
     [isActive, onSwipeLeft, onSwipeRight, translate, onDragProgress]

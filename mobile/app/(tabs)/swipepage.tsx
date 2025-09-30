@@ -8,6 +8,7 @@ import { NewsArticle, SwipeDirection } from '../../types';
 import { fetchNews } from '../../lib/api';
 import { addSwipeAction } from '../../lib/swipeStore';
 import { colors, spacing, typography, shadows, borderRadius } from '../../lib/design';
+import { userService } from '../../lib/userService';
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
@@ -29,7 +30,7 @@ export default function HomeScreen() {
     setError(null);
     try {
       console.log('📡 SwipePage: Calling fetchNews...');
-      const fresh = await fetchNews(8, withSeen);
+      const fresh = await fetchNews(10, withSeen);
       console.log('✅ SwipePage: Received', fresh.length, 'articles:', fresh.map(a => ({ id: a.id, title: a.title?.slice(0, 50) })));
       setCards(fresh);
       setIndex(0);
@@ -52,34 +53,47 @@ export default function HomeScreen() {
   // Summarization disabled
 
   const onSwipe = useCallback((dir: SwipeDirection) => {
-    if (!current) return;
-    const newSeen = [...seen, current.id];
-    setSeen(newSeen);
-    setHistory(prev => [...prev, { id: current.id, direction: dir }]);
-    // record swipe for knowledge network
-    addSwipeAction({ articleId: current.id, direction: dir, article: current });
-    // Preload more when approaching end
-    if (cards.length - index <= 3) {
-      (async () => {
-        if (isFetchingMore) return;
-        try {
-          setIsFetchingMore(true);
-          const existingIds = new Set(cards.map(c => c.id));
-          const more = await fetchNews(8, [...newSeen, ...cards.map(c => c.id)]);
-          const unique = more.filter(a => !existingIds.has(a.id));
-          if (unique.length) setCards(prev => [...prev, ...unique]);
-        } finally {
-          setIsFetchingMore(false);
-        }
-      })();
-    }
+    setIndex(prev => {
+      const currentCard = cards[prev];
+      if (!currentCard) return prev;
+      
+      const newSeen = [...seen, currentCard.id];
+      setSeen(newSeen);
+      setHistory(h => [...h, { id: currentCard.id, direction: dir }]);
+      addSwipeAction({ articleId: currentCard.id, direction: dir, article: currentCard });
+      
+      // Track user activity
+      userService.trackActivity(currentCard.id, 'viewed');
+      if (dir === 'right') {
+        userService.trackActivity(currentCard.id, 'liked');
+      }
+      
+      const cardsLeft = cards.length - prev - 1;
+      console.log('📊 Cards left until fetch:', cardsLeft);
+      
+      // Preload more when approaching end
+      if (cards.length - prev <= 3 && !isFetchingMore) {
+        setIsFetchingMore(true);
+        fetchNews(10, [...newSeen, ...cards.map(c => c.id)])
+          .then(more => {
+            const existingIds = new Set(cards.map(c => c.id));
+            const unique = more.filter(a => !existingIds.has(a.id));
+            if (unique.length) setCards(c => [...c, ...unique]);
+          })
+          .finally(() => setIsFetchingMore(false));
+      }
 
-    if (index < cards.length - 1) {
-      setIndex(prev => prev + 1);
-    } else {
-      load(newSeen);
-    }
-  }, [cards.length, current, index, isFetchingMore, load, seen]);
+      if (prev < cards.length - 1) {
+        return prev + 1;
+      } else {
+        load(newSeen);
+        return prev;
+      }
+    });
+  }, [cards, seen, isFetchingMore, load]);
+
+  const onSwipeLeft = useCallback(() => onSwipe('left'), [onSwipe]);
+  const onSwipeRight = useCallback(() => onSwipe('right'), [onSwipe]);
 
   const goPrev = useCallback(() => {
     if (history.length === 0 || index === 0) return;
@@ -140,7 +154,7 @@ export default function HomeScreen() {
       <View style={styles.cardStack}>
         {visible.map((a, i) => {
           const pos = i; // 0 -> top, 1 -> next, 2 -> third
-          const key = `${a.id}-${pos}`;
+          const key = a.id;
           if (pos === 0) {
             return (
               <Animated.View key={key} style={layerStyle(pos)}>
@@ -148,13 +162,12 @@ export default function HomeScreen() {
                   isActive
                   onSwipeLeft={() => onSwipe('left')}
                   onSwipeRight={() => onSwipe('right')}
-                  onDragProgress={(p) => deckProgress.setValue(p)}
                 >
                   <ArticleCard
                     variant="swipe"
                     article={a}
-                    onPass={() => onSwipe('left')}
-                    onLike={() => onSwipe('right')}
+                    onPass={onSwipeLeft}
+                    onLike={onSwipeRight}
                     onOpenLink={() => { if (a?.url) Linking.openURL(a.url).catch(() => {}); }}
                   />
                 </SwipeCard>
@@ -169,22 +182,21 @@ export default function HomeScreen() {
         }).reverse()}
       </View>
     );
-  }, [loading, current, cards, index, onSwipe, load, deckProgress]);
+  }, [loading, current, index, onSwipe, load]);
 
   // Respect bottom tab bar so controls aren't hidden
   const BOTTOM_BAR_HEIGHT = 64;
-  const BOTTOM_BAR_MARGIN = 12;
-  const paddingBottom = insets.bottom + BOTTOM_BAR_HEIGHT + BOTTOM_BAR_MARGIN + 16;
+  const paddingBottom = insets.bottom + BOTTOM_BAR_HEIGHT + 24;
 
   return (
     <View style={styles.container}>
       {/* Top app bar within safe area */}
       <View style={[styles.appBar, { paddingTop: insets.top + 10 }]}> 
-        <Pressable onPress={() => load(seen)} style={[styles.iconBtn, { backgroundColor: colors.gray200 }]} accessibilityRole="button" accessibilityLabel="Refresh">
-          <RefreshCw color={colors.gray900} size={16} />
+        <Pressable onPress={() => load(seen)} style={[styles.iconBtn, { backgroundColor: colors.gray100 }]} accessibilityRole="button" accessibilityLabel="Refresh">
+          <RefreshCw color={colors.gray600} size={16} />
         </Pressable>
         <Text style={styles.appBarTitle}>For You</Text>
-        <Pressable onPress={goPrev} style={[styles.iconBtn, { backgroundColor: colors.info }]} accessibilityRole="button" accessibilityLabel="Undo last swipe">
+        <Pressable onPress={goPrev} style={[styles.iconBtn, { backgroundColor: colors.primary }]} accessibilityRole="button" accessibilityLabel="Undo last swipe">
           <Undo2 color={colors.white} size={16} />
         </Pressable>
       </View>
@@ -209,7 +221,7 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.sm,
     backgroundColor: colors.gray100,
   },
-  appBarTitle: { ...typography.h3, color: colors.gray900 },
+  appBarTitle: { ...typography.h2, color: colors.gray900 },
   iconBtn: { 
     width: 36, 
     height: 36, 

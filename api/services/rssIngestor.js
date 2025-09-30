@@ -259,6 +259,34 @@ function stripHtml(s = '') {
 
 
 
+async function generateStructuralSummary(title, description) {
+  try {
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: 'gpt-3.5-turbo',
+        messages: [{
+          role: 'user',
+          content: `Create a concise 2-sentence summary of this news article:\n\nTitle: ${title}\nDescription: ${description}`
+        }],
+        max_tokens: 100,
+        temperature: 0.3
+      })
+    });
+    
+    if (!response.ok) return null;
+    const data = await response.json();
+    return data.choices?.[0]?.message?.content?.trim() || null;
+  } catch (e) {
+    console.warn('OpenAI summary failed:', e.message);
+    return null;
+  }
+}
+
 async function normalizeEntry(entry, sourceTitle, feedUrl) {
   const rawDesc =
     entry.contentSnippet ||
@@ -271,9 +299,24 @@ async function normalizeEntry(entry, sourceTitle, feedUrl) {
   const url = entry.link || null;
 
   let img = pickImage(entry, feedUrl);
+  console.log('🖼️ RSS: pickImage result for', entry.title?.slice(0, 50), ':', img);
+  
   if (!img && url) {
+    console.log('🔍 RSS: Trying fetchOgImage for', url);
     img = await fetchOgImage(url, feedUrl);
+    console.log('🖼️ RSS: fetchOgImage result:', img);
   }
+
+  // Skip articles without images
+  if (!img) {
+    console.log('❌ RSS: Skipping article with no image:', entry.title?.slice(0, 50));
+    return null;
+  }
+  
+  console.log('✅ RSS: Article with image:', entry.title?.slice(0, 50), 'imageUrl:', img);
+
+  // Generate structural summary
+  const structuralSummary = await generateStructuralSummary(entry.title || '', description);
 
   return {
     id: entry.guid || entry.id || url || `${feedUrl}#${entry.title || 'untitled'}`,
@@ -281,6 +324,7 @@ async function normalizeEntry(entry, sourceTitle, feedUrl) {
     url,
     source: sourceTitle || (url ? new URL(url).hostname : new URL(feedUrl).hostname),
     description,
+    structuralSummary,
     imageUrl: img,
     publishedAt: entry.isoDate || entry.pubDate || null,
     category: inferCategory(entry, sourceTitle, feedUrl),
@@ -312,7 +356,10 @@ export async function fetchLatestNews() {
             const feed = await parser.parseURL(feedUrl);
             const src = feed.title || new URL(feedUrl).hostname;
             for (const item of feed.items || []) {
-                results.push(await normalizeEntry(item, src, feedUrl));
+                const normalized = await normalizeEntry(item, src, feedUrl);
+                if (normalized) { // Only add articles with images
+                    results.push(normalized);
+                }
             }
         } catch (e) {
             // skip failing feeds

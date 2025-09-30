@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { fetchLatestNews } from '../services/rssIngestor.js';
+import { fetchLatestNews } from '../services/dynamoService.js';
 
 const router = Router();
 

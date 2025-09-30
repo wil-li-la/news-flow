@@ -1,41 +1,95 @@
-import { client } from './dataClient';
-import { getCurrentUser } from 'aws-amplify/auth';
+import { getCurrentUser, fetchAuthSession } from 'aws-amplify/auth';
 
-export async function createUserProfile(email: string, name?: string) {
-  try {
-    const user = await getCurrentUser();
-    return await client.models.UserInfo.create({
-      user_id: user.userId,
-      email,
-      name,
-      preferences: {}
-    });
-  } catch (error) {
-    console.error('Failed to create user profile:', error);
-    throw error;
-  }
-}
+const API_BASE = 'https://a08y6nfdj0.execute-api.ap-southeast-2.amazonaws.com/prod';
 
-export async function getUserProfile() {
-  try {
-    const user = await getCurrentUser();
-    const result = await client.models.UserInfo.get({ user_id: user.userId });
-    return result.data;
-  } catch (error) {
-    console.error('Failed to get user profile:', error);
-    throw error;
-  }
-}
+export const userService = {
+  async getUserPreferences() {
+    try {
+      const user = await getCurrentUser();
+      const session = await fetchAuthSession();
+      
+      const response = await fetch(`${API_BASE}/user/${user.userId}`, {
+        headers: {
+          'Authorization': `Bearer ${session.tokens?.idToken?.toString()}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (response.ok) {
+        return await response.json();
+      }
+      throw new Error(`HTTP ${response.status}`);
+    } catch (error) {
+      console.error('Error getting user preferences:', error);
+      return { customizationLevel: 50, activities: [] };
+    }
+  },
 
-export async function updateUserProfile(updates: { name?: string; preferences?: any }) {
-  try {
-    const user = await getCurrentUser();
-    return await client.models.UserInfo.update({
-      user_id: user.userId,
-      ...updates
-    });
-  } catch (error) {
-    console.error('Failed to update user profile:', error);
-    throw error;
+  async updateCustomizationLevel(level: number) {
+    try {
+      const user = await getCurrentUser();
+      const session = await fetchAuthSession();
+      
+      const response = await fetch(`${API_BASE}/user/${user.userId}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${session.tokens?.idToken?.toString()}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          customizationLevel: level,
+          updatedAt: new Date().toISOString()
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+      console.log('✅ Customization level updated:', level);
+    } catch (error) {
+      console.error('Error updating customization level:', error);
+      throw error;
+    }
+  },
+
+  async trackActivity(articleId: string, action: 'viewed' | 'liked' | 'disliked' | 'shared') {
+    try {
+      const user = await getCurrentUser();
+      const session = await fetchAuthSession();
+      
+      const response = await fetch(`${API_BASE}/user/${user.userId}/activity`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.tokens?.idToken?.toString()}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          articleId,
+          action,
+          timestamp: new Date().toISOString()
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+      console.log('✅ Activity tracked:', action, articleId);
+    } catch (error) {
+      console.error('Error tracking activity:', error);
+      throw error;
+    }
+  },
+
+  async getViewedArticles() {
+    try {
+      const userData = await this.getUserPreferences();
+      const activities = userData?.activities || [];
+      return activities
+        .filter((a: any) => a.action === 'viewed')
+        .map((a: any) => a.articleId);
+    } catch (error) {
+      console.error('Error getting viewed articles:', error);
+      return [];
+    }
   }
-}
+};

@@ -1,6 +1,13 @@
 To-dos:
 
-Done 先看看 這個 API 會回傳什麼 https://6on7yqwxw0.execute-api.us-east-1.amazonaws.com/prod
+Done 更新 news fetch lamnda, 還是有一些沒有 Image 的新聞會被抓進來
+Done Lmambda 的 HTNL encode 需要升級一下 或是確定每次都會被處理到
+Done UI 整理
+Done change to 10
+Done temperature
+Done AWS Cognito
+Done User DynamoDB
+Done filter seen content
+Done apply scoring and news feed algorithm
 
-搞定 Swipepage view 有夠醜
-設定 個人登入畫面
+
