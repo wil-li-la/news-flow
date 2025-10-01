@@ -22,6 +22,8 @@ export default function SettingsScreen() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [customizationLevel, setCustomizationLevel] = useState(50);
+  const [userPreferences, setUserPreferences] = useState<any>(null);
+  const [refreshing, setRefreshing] = useState(false);
 
   const padBottom = useMemo(() => insets.bottom + 88, [insets.bottom]);
 
@@ -42,15 +44,29 @@ export default function SettingsScreen() {
     }
   }, [user, step.kind]);
 
-  useEffect(() => {
+  const loadUserPreferences = useCallback(async () => {
     if (user) {
-      userService.getUserPreferences().then(prefs => {
+      try {
+        const prefs = await userService.getUserPreferences();
+        setUserPreferences(prefs);
         if (prefs?.customizationLevel !== undefined) {
           setCustomizationLevel(prefs.customizationLevel);
         }
-      });
+      } catch (error) {
+        console.error('Error loading preferences:', error);
+      }
     }
   }, [user]);
+
+  const refreshPreferences = useCallback(async () => {
+    setRefreshing(true);
+    await loadUserPreferences();
+    setRefreshing(false);
+  }, [loadUserPreferences]);
+
+  useEffect(() => {
+    loadUserPreferences();
+  }, [loadUserPreferences]);
 
   const onSignIn = useCallback(async () => {
     setError(null);
@@ -141,9 +157,7 @@ export default function SettingsScreen() {
       ) : user ? (
         <View style={styles.card}>
           <Text style={styles.sectionTitle}>Account</Text>
-          <Text style={styles.label}>User ID</Text>
-          <Text style={styles.value}>{user.userId}</Text>
-          <Text style={[styles.label, { marginTop: 12 }]}>Email</Text>
+          <Text style={styles.label}>Email</Text>
           <Text style={styles.value}>{user.signInDetails?.loginId || email || 'N/A'}</Text>
 
           <Text style={[styles.sectionTitle, { marginTop: spacing.xl }]}>News Customization</Text>
@@ -172,6 +186,41 @@ export default function SettingsScreen() {
             </View>
             <Text style={styles.sliderLabel}>100%</Text>
           </View>
+
+          {userPreferences && (
+            <>
+              
+              {userPreferences.preferredLabels && Object.keys(userPreferences.preferredLabels).length > 0 && (
+                <View style={styles.preferenceSection}>
+                  <Text style={styles.preferenceTitle}>Preferred Labels</Text>
+                  <View style={styles.tagsContainer}>
+                    {Object.entries(userPreferences.preferredLabels)
+                      .sort(([,a], [,b]) => (b as number) - (a as number))
+                      .map(([label, count]) => (
+                      <View key={label} style={styles.tag}>
+                        <Text style={styles.tagText}>{label} ({count as number})</Text>
+                      </View>
+                    ))}
+                  </View>
+                </View>
+              )}
+              
+              {userPreferences.preferredCategories && Object.keys(userPreferences.preferredCategories).length > 0 && (
+                <View style={styles.preferenceSection}>
+                  <Text style={styles.preferenceTitle}>Preferred Categories</Text>
+                  <View style={styles.tagsContainer}>
+                    {Object.entries(userPreferences.preferredCategories)
+                      .sort(([,a], [,b]) => (b as number) - (a as number))
+                      .map(([category, count]) => (
+                      <View key={category} style={styles.tag}>
+                        <Text style={styles.tagText}>{category} ({count as number})</Text>
+                      </View>
+                    ))}
+                  </View>
+                </View>
+              )}
+            </>
+          )}
 
           <Pressable onPress={onSignOut} disabled={loading} style={[styles.primaryBtn, { backgroundColor: colors.error, marginTop: spacing.xl, opacity: loading ? 0.6 : 1 }]}> 
             <Text style={styles.primaryBtnText}>{loading ? 'Signing out…' : 'Sign Out'}</Text>
@@ -392,5 +441,45 @@ const styles = StyleSheet.create({
     color: colors.gray600,
     minWidth: 30,
     textAlign: 'center',
+  },
+  preferencesHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  refreshBtn: {
+    backgroundColor: colors.primary,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: borderRadius.sm,
+  },
+  refreshBtnText: {
+    color: colors.white,
+    ...typography.captionMedium,
+  },
+  preferenceSection: {
+    marginBottom: spacing.md,
+  },
+  preferenceTitle: {
+    ...typography.bodySemibold,
+    color: colors.gray700,
+    marginBottom: spacing.sm,
+  },
+  tagsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+  },
+  tag: {
+    backgroundColor: colors.primary + '20',
+    borderColor: colors.primary,
+    borderWidth: 1,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 4,
+    borderRadius: borderRadius.sm,
+  },
+  tagText: {
+    color: colors.primary,
+    ...typography.caption,
   },
 });

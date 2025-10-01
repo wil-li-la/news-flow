@@ -1,17 +1,57 @@
 {
   "expo": {
-    "name": "NewsFlow Mobile",
+    "name": "NewsFlow",
     "slug": "newsflow-mobile",
+    "version": "1.0.0",
+    "sdkVersion": "51.0.0",
+    "newArchEnabled": true,
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "scheme": "newsflow",
     "plugins": [
       "expo-router"
     ],
     "ios": {
-      "bundleIdentifier": "com.newsflow.app"
+      "supportsTablet": true,
+      "bundleIdentifier": "com.newsflow.app",
+      "buildNumber": "1",
+      "infoPlist": {
+        "UIBackgroundModes": [
+          "background-fetch",
+          "background-fetch"
+        ],
+        "NSUserTrackingUsageDescription": "This app uses tracking to provide personalized news recommendations.",
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
-      "package": "com.newsflow.app"
-    }
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "package": "com.newsflow.app",
+      "versionCode": 1
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "49133ea6-4066-42d0-b613-7dbd1baca4e0"
+      }
+    },
+    "owner": "wil_li_la"
   }
 }
-

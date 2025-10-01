@@ -17,7 +17,9 @@
     "android:with-api": "npm run mobile:android"
   },
   "dependencies": {
+    "@aws-sdk/client-api-gateway": "^3.899.0",
     "@aws-sdk/client-dynamodb": "^3.0.0",
+    "@aws-sdk/client-lambda": "^3.899.0",
     "@aws-sdk/lib-dynamodb": "^3.0.0",
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
