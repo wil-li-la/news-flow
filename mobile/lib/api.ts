@@ -2,7 +2,7 @@ import { NewsArticle } from '../types';
 import { userService } from './userService';
 
 // API base URL with /prod stage prefix
-const API_BASE: string = 'https://a08y6nfdj0.execute-api.ap-southeast-2.amazonaws.com/prod';
+const API_BASE: string = 'https://oq5bvm222k.execute-api.ap-southeast-2.amazonaws.com/prod';
 const ENV = process.env || {};
 console.log('🔧 API Config: API_BASE =', API_BASE);
 console.log('🔧 API Config: ENV =', ENV);
@@ -94,9 +94,10 @@ async function fetchWithTimeout(url: string, init?: RequestInit, ms = 8000) {
   }
 }
 
-async function fetchNewsFromLambda(limit: number, seenIds: string[]): Promise<NewsArticle[]> {
+async function fetchNewsFromLambda(limit: number, seenIds: string[], userId?: string): Promise<NewsArticle[]> {
   const seen = encodeURIComponent(seenIds.join(','));
-  const url = `${API_BASE}/items?limit=${limit}&seen=${seen}`;
+  const userParam = userId ? `&userId=${encodeURIComponent(userId)}` : '';
+  const url = `${API_BASE}/items?limit=${limit}&seen=${seen}${userParam}`;
   console.log('📡 API: Fetching from', url);
   const res = await fetchWithTimeout(url);
   console.log('📊 API: Response status:', res.status, res.statusText);
@@ -125,7 +126,16 @@ export async function fetchNews(limit = 5, seenIds: string[] = []): Promise<News
   const viewedArticles = await userService.getViewedArticles();
   const allSeenIds = [...new Set([...seenIds, ...viewedArticles])];
   
-  const articles = await fetchNewsFromLambda(limit, allSeenIds);
+  // Get current user ID for personalization
+  let userId;
+  try {
+    const user = await import('aws-amplify/auth').then(auth => auth.getCurrentUser());
+    userId = user.userId;
+  } catch {
+    // Anonymous user - no personalization
+  }
+  
+  const articles = await fetchNewsFromLambda(limit, allSeenIds, userId);
   return normalizeArticles(articles);
 }
 

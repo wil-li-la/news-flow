@@ -17,7 +17,7 @@ router.get('/:userId', async (req, res) => {
       Key: { user_id: userId }
     }));
     
-    res.json(Item || { user_id: userId, customizationLevel: 50, activities: [] });
+    res.json(Item || { user_id: userId, customizationLevel: 50, activities: [], preferredLabels: {}, preferredSources: {}, preferredCategories: {} });
   } catch (error) {
     console.error('Error getting user data:', error);
     res.status(500).json({ error: 'Failed to get user data' });
@@ -47,11 +47,11 @@ router.put('/:userId', async (req, res) => {
   }
 });
 
-// Track user activity
+// Track user activity with swipe data
 router.post('/:userId/activity', async (req, res) => {
   try {
     const { userId } = req.params;
-    const { articleId, action, timestamp } = req.body;
+    const { articleId, action, timestamp, articleData } = req.body;
     
     // Get existing data
     const { Item } = await docClient.send(new GetCommand({
@@ -60,19 +60,54 @@ router.post('/:userId/activity', async (req, res) => {
     }));
     
     const activities = Item?.activities || [];
-    activities.push({ articleId, action, timestamp });
+    const activityEntry = { 
+      articleId, 
+      action, 
+      timestamp,
+      ...(articleData && {
+        category: articleData.category,
+        source: articleData.source,
+        region: articleData.region
+      })
+    };
+    activities.push(activityEntry);
     
     // Keep only last 1000 activities
     const recentActivities = activities.slice(-1000);
     
+    // Update preference counters for liked articles
+    let updateExpression = 'SET activities = :activities, updatedAt = :now';
+    const expressionValues = {
+      ':activities': recentActivities,
+      ':now': new Date().toISOString()
+    };
+    
+    if (action === 'liked' && articleData) {
+      const preferredLabels = Item?.preferredLabels || {};
+      const preferredSources = Item?.preferredSources || {};
+      const preferredCategories = Item?.preferredCategories || {};
+      
+      if (articleData.region) {
+        preferredLabels[articleData.region] = (preferredLabels[articleData.region] || 0) + 1;
+      }
+      if (articleData.source) {
+        preferredSources[articleData.source] = (preferredSources[articleData.source] || 0) + 1;
+      }
+      if (articleData.category) {
+        preferredCategories[articleData.category] = (preferredCategories[articleData.category] || 0) + 1;
+      }
+      
+      updateExpression += ', preferredLabels = :labels, preferredSources = :sources, preferredCategories = :categories';
+      expressionValues[':labels'] = preferredLabels;
+      expressionValues[':sources'] = preferredSources;
+      expressionValues[':categories'] = preferredCategories;
+    }
+    
     await docClient.send(new UpdateCommand({
       TableName: TABLE_NAME,
       Key: { user_id: userId },
-      UpdateExpression: 'SET activities = :activities, updatedAt = :now',
-      ExpressionAttributeValues: {
-        ':activities': recentActivities,
-        ':now': new Date().toISOString()
-      }
+      UpdateExpression: updateExpression,
+      ExpressionAttributeValues: expressionValues
     }));
     
     res.json({ success: true });

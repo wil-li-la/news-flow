@@ -52,45 +52,55 @@ export default function HomeScreen() {
 
   // Summarization disabled
 
-  const onSwipe = useCallback((dir: SwipeDirection) => {
-    setIndex(prev => {
-      const currentCard = cards[prev];
-      if (!currentCard) return prev;
+  const onSwipe = useCallback(async (dir: SwipeDirection) => {
+    const currentCard = cards[index];
+    if (!currentCard) return;
+    
+    const newSeen = [...seen, currentCard.id];
+    setSeen(newSeen);
+    setHistory(h => [...h, { id: currentCard.id, direction: dir }]);
+    addSwipeAction({ articleId: currentCard.id, direction: dir, article: currentCard });
+    
+    // Track user activity with article metadata for customization
+    try {
+      const articleData = {
+        category: currentCard.category,
+        source: currentCard.source,
+        region: currentCard.region
+      };
       
-      const newSeen = [...seen, currentCard.id];
-      setSeen(newSeen);
-      setHistory(h => [...h, { id: currentCard.id, direction: dir }]);
-      addSwipeAction({ articleId: currentCard.id, direction: dir, article: currentCard });
-      
-      // Track user activity
-      userService.trackActivity(currentCard.id, 'viewed');
+      await userService.trackActivity(currentCard.id, 'viewed', articleData);
       if (dir === 'right') {
-        userService.trackActivity(currentCard.id, 'liked');
-      }
-      
-      const cardsLeft = cards.length - prev - 1;
-      console.log('📊 Cards left until fetch:', cardsLeft);
-      
-      // Preload more when approaching end
-      if (cards.length - prev <= 3 && !isFetchingMore) {
-        setIsFetchingMore(true);
-        fetchNews(10, [...newSeen, ...cards.map(c => c.id)])
-          .then(more => {
-            const existingIds = new Set(cards.map(c => c.id));
-            const unique = more.filter(a => !existingIds.has(a.id));
-            if (unique.length) setCards(c => [...c, ...unique]);
-          })
-          .finally(() => setIsFetchingMore(false));
-      }
-
-      if (prev < cards.length - 1) {
-        return prev + 1;
+        await userService.trackActivity(currentCard.id, 'liked', articleData);
+        console.log('❤️ Liked article:', currentCard.title?.substring(0, 50));
       } else {
-        load(newSeen);
-        return prev;
+        console.log('❌ Passed article:', currentCard.title?.substring(0, 50));
       }
-    });
-  }, [cards, seen, isFetchingMore, load]);
+    } catch (error) {
+      console.error('Failed to track activity:', error);
+    }
+    
+    const cardsLeft = cards.length - index - 1;
+    console.log('📊 Cards left until fetch:', cardsLeft);
+    
+    // Preload more when approaching end
+    if (cards.length - index <= 3 && !isFetchingMore) {
+      setIsFetchingMore(true);
+      fetchNews(10, [...newSeen, ...cards.map(c => c.id)])
+        .then(more => {
+          const existingIds = new Set(cards.map(c => c.id));
+          const unique = more.filter(a => !existingIds.has(a.id));
+          if (unique.length) setCards(c => [...c, ...unique]);
+        })
+        .finally(() => setIsFetchingMore(false));
+    }
+
+    if (index < cards.length - 1) {
+      setIndex(prev => prev + 1);
+    } else {
+      load(newSeen);
+    }
+  }, [cards, seen, isFetchingMore, load, index]);
 
   const onSwipeLeft = useCallback(() => onSwipe('left'), [onSwipe]);
   const onSwipeRight = useCallback(() => onSwipe('right'), [onSwipe]);

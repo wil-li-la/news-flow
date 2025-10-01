@@ -2,11 +2,7 @@ import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient, GetCommand, UpdateCommand, ScanCommand } from '@aws-sdk/lib-dynamodb';
 
 const dynamoClient = new DynamoDBClient({ region: 'ap-southeast-2' });
-const docClient = DynamoDBDocumentClient.from(dynamoClient, {
-    marshallOptions: {
-        removeUndefinedValues: true
-    }
-});
+const docClient = DynamoDBDocumentClient.from(dynamoClient);
 const USER_TABLE = 'UserData';
 const NEWS_TABLE = 'NewsArticles';
 
@@ -35,7 +31,6 @@ async function fetchNewsFromDynamoDB() {
         imageUrl: item.imageUrl,
         publishedAt: item.publishedAt,
         category: item.category,
-        labels: item.labels || [],
         structuralSummary: item.structuredSummary
     })).sort((a, b) => new Date(b.publishedAt || 0) - new Date(a.publishedAt || 0));
 
@@ -50,23 +45,18 @@ function getPersonalizedNews(allNews, userPrefs, customizationLevel, seenSet, li
     
     const unseen = allNews.filter(a => !seenSet.has(a.id));
     
-    // Get preferred items from counters (top preferences)
-    const preferredSources = Object.keys(userPrefs.preferredSources || {});
-    const preferredCategories = Object.keys(userPrefs.preferredCategories || {});
-    const preferredLabels = Object.keys(userPrefs.preferredLabels || {});
-    
     // Personalized pool: match user preferences (sources, categories, labels)
     const personalized = unseen.filter(a => 
-        preferredSources.includes(a.source) ||
-        preferredCategories.includes(a.category) ||
-        (a.labels || []).some(label => preferredLabels.includes(label))
+        (userPrefs.preferredSources || []).includes(a.source) ||
+        (userPrefs.preferredCategories || []).includes(a.category) ||
+        (a.labels || []).some(label => (userPrefs.preferredLabels || []).includes(label))
     );
     
     // Random pool: all other unseen
     const random = unseen.filter(a => 
-        !preferredSources.includes(a.source) &&
-        !preferredCategories.includes(a.category) &&
-        !(a.labels || []).some(label => preferredLabels.includes(label))
+        !(userPrefs.preferredSources || []).includes(a.source) &&
+        !(userPrefs.preferredCategories || []).includes(a.category) &&
+        !(a.labels || []).some(label => (userPrefs.preferredLabels || []).includes(label))
     );
     
     const selectedPersonalized = personalized.slice(0, x);
@@ -117,19 +107,8 @@ export const handler = async (event) => {
                 
                 // Use real-time customization level from user preferences
                 const customizationLevel = userPrefs?.customizationLevel || 50;
-                const userSeenArticles = userPrefs?.seenArticles || [];
-                const combinedSeen = new Set([...seenSet, ...userSeenArticles]);
-                
-                console.log('🎯 Real-time personalization:', {
-                    userId,
-                    customizationLevel,
-                    preferredSources: Object.keys(userPrefs?.preferredSources || {}).length,
-                    preferredCategories: Object.keys(userPrefs?.preferredCategories || {}).length,
-                    preferredLabels: Object.keys(userPrefs?.preferredLabels || {}).length,
-                    totalSeen: combinedSeen.size
-                });
-                
-                result = getPersonalizedNews(allNews, userPrefs || {}, customizationLevel, combinedSeen, Number(limit) || 10);
+                console.log('Real-time customization level:', customizationLevel, 'for user:', userId);
+                result = getPersonalizedNews(allNews, userPrefs || {}, customizationLevel, seenSet, Number(limit) || 10);
             } else {
                 // Fallback: random unseen articles
                 result = allNews.filter(a => !seenSet.has(a.id)).slice(0, Number(limit) || 10);
@@ -153,19 +132,13 @@ export const handler = async (event) => {
                 return {
                     statusCode: 200,
                     headers,
-                    body: JSON.stringify(Item || { user_id: userId, customizationLevel: 50, activities: [], preferredLabels: {}, preferredSources: {}, preferredCategories: {} })
+                    body: JSON.stringify(Item || { user_id: userId, customizationLevel: 50, activities: [] })
                 };
             }
             
             if (method === 'PUT') {
                 const body = JSON.parse(event.body || '{}');
                 const { customizationLevel, updatedAt } = body;
-                
-                console.log('🌡️ Real-time customization level update:', {
-                    userId,
-                    newLevel: customizationLevel,
-                    timestamp: new Date().toISOString()
-                });
                 
                 await docClient.send(new UpdateCommand({
                     TableName: USER_TABLE,
@@ -182,7 +155,7 @@ export const handler = async (event) => {
             
             if (method === 'POST' && requestPath.includes('/activity')) {
                 const body = JSON.parse(event.body || '{}');
-                const { articleId, action, timestamp, articleData } = body;
+                const { articleId, action, timestamp } = body;
                 
                 // Get existing data
                 const { Item } = await docClient.send(new GetCommand({
@@ -194,18 +167,10 @@ export const handler = async (event) => {
                 activities.push({ articleId, action, timestamp });
                 const recentActivities = activities.slice(-1000);
                 
-                // Track seen articles with unique values
-                const seenArticles = Item?.seenArticles || [];
-                if (!seenArticles.includes(articleId)) {
-                    seenArticles.push(articleId);
-                }
-                const recentSeen = seenArticles.slice(-2000); // Keep last 2000 seen articles
-                
                 // Update preferences if user liked an article
-                let updateExpression = 'SET activities = :activities, seenArticles = :seen, updatedAt = :now';
+                let updateExpression = 'SET activities = :activities, updatedAt = :now';
                 let expressionValues = {
                     ':activities': recentActivities,
-                    ':seen': recentSeen,
                     ':now': new Date().toISOString()
                 };
                 
@@ -232,32 +197,28 @@ export const handler = async (event) => {
                         }
                         
                         if (article) {
-                            const preferredLabels = Item?.preferredLabels || {};
-                            const preferredSources = Item?.preferredSources || {};
-                            const preferredCategories = Item?.preferredCategories || {};
+                            const currentSources = Item?.preferredSources || [];
+                            const currentCategories = Item?.preferredCategories || [];
+                            const currentLabels = Item?.preferredLabels || [];
                             
-                            if (article.region) {
-                                preferredLabels[article.region] = (preferredLabels[article.region] || 0) + 1;
-                            }
-                            if (article.source) {
-                                preferredSources[article.source] = (preferredSources[article.source] || 0) + 1;
-                            }
-                            if (article.category) {
-                                preferredCategories[article.category] = (preferredCategories[article.category] || 0) + 1;
-                            }
+                            const updatedSources = article.source && !currentSources.includes(article.source)
+                                ? [...currentSources, article.source].slice(-10)
+                                : currentSources;
                             
-                            updateExpression += ', preferredLabels = :labels, preferredSources = :sources, preferredCategories = :categories';
-                            expressionValues[':labels'] = preferredLabels;
-                            expressionValues[':sources'] = preferredSources;
-                            expressionValues[':categories'] = preferredCategories;
+                            const updatedCategories = article.category && article.category !== 'General' && !currentCategories.includes(article.category)
+                                ? [...currentCategories, article.category].slice(-10)
+                                : currentCategories;
                             
-                            console.log('✅ Counter-based preference update:', {
-                                userId,
-                                article: article.title?.substring(0, 50),
-                                labels: preferredLabels,
-                                sources: preferredSources,
-                                categories: preferredCategories
-                            });
+                            const articleLabels = article.labels || [];
+                            const newLabels = articleLabels.filter(label => !currentLabels.includes(label));
+                            const updatedLabels = [...currentLabels, ...newLabels].slice(-20);
+                            
+                            updateExpression += ', preferredSources = :sources, preferredCategories = :categories, preferredLabels = :labels';
+                            expressionValues[':sources'] = updatedSources;
+                            expressionValues[':categories'] = updatedCategories;
+                            expressionValues[':labels'] = updatedLabels;
+                            
+                            console.log('Updated preferences:', { sources: updatedSources, categories: updatedCategories, labels: updatedLabels });
                         } else {
                             console.log('Article not found for preference update:', articleId);
                         }
@@ -275,32 +236,6 @@ export const handler = async (event) => {
                 
                 return { statusCode: 200, headers, body: JSON.stringify({ success: true }) };
             }
-        }
-        
-        // Handle GET /debug/user/{userId} - Debug endpoint for checking user preferences
-        if (method === 'GET' && requestPath.includes('/debug/user/')) {
-            const userId = pathParameters?.userId || requestPath.replace('/prod', '').split('/debug/user/')[1].split('/')[0];
-            
-            const { Item } = await docClient.send(new GetCommand({
-                TableName: USER_TABLE,
-                Key: { user_id: userId }
-            }));
-            
-            const debugInfo = {
-                userId,
-                found: !!Item,
-                customizationLevel: Item?.customizationLevel || 50,
-                preferredSources: Item?.preferredSources || [],
-                preferredCategories: Item?.preferredCategories || [],
-                preferredLabels: Item?.preferredLabels || [],
-                totalActivities: (Item?.activities || []).length,
-                totalSeenArticles: (Item?.seenArticles || []).length,
-                recentActivities: (Item?.activities || []).slice(-5),
-                lastUpdated: Item?.updatedAt,
-                personalizationWorking: !!(Item?.preferredSources?.length || Item?.preferredCategories?.length || Item?.preferredLabels?.length)
-            };
-            
-            return { statusCode: 200, headers, body: JSON.stringify(debugInfo, null, 2) };
         }
         
         // Handle GET /search

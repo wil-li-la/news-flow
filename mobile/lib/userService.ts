@@ -1,6 +1,7 @@
 import { getCurrentUser, fetchAuthSession } from 'aws-amplify/auth';
+import { NewsArticle } from '../types';
 
-const API_BASE = 'https://a08y6nfdj0.execute-api.ap-southeast-2.amazonaws.com/prod';
+const API_BASE = 'https://oq5bvm222k.execute-api.ap-southeast-2.amazonaws.com/prod';
 
 export const userService = {
   async getUserPreferences() {
@@ -52,7 +53,7 @@ export const userService = {
     }
   },
 
-  async trackActivity(articleId: string, action: 'viewed' | 'liked' | 'disliked' | 'shared') {
+  async trackActivity(articleId: string, action: 'viewed' | 'liked' | 'disliked' | 'shared', articleData?: { category?: string; source?: string; region?: string }) {
     try {
       const user = await getCurrentUser();
       const session = await fetchAuthSession();
@@ -66,14 +67,15 @@ export const userService = {
         body: JSON.stringify({
           articleId,
           action,
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
+          articleData
         })
       });
       
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}`);
       }
-      console.log('✅ Activity tracked:', action, articleId);
+      console.log('✅ Activity tracked:', action, articleId, articleData ? 'with metadata' : '');
     } catch (error) {
       console.error('Error tracking activity:', error);
       throw error;
@@ -83,10 +85,10 @@ export const userService = {
   async getViewedArticles() {
     try {
       const userData = await this.getUserPreferences();
-      const activities = userData?.activities || [];
-      return activities
-        .filter((a: any) => a.action === 'viewed')
-        .map((a: any) => a.articleId);
+      // Use seenArticles field for better tracking
+      const seenArticles = userData?.seenArticles || [];
+      console.log('📊 Retrieved', seenArticles.length, 'seen articles from user data');
+      return seenArticles;
     } catch (error) {
       console.error('Error getting viewed articles:', error);
       return [];
