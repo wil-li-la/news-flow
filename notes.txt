@@ -13,13 +13,14 @@ Done 現在先用 source preference
 Done 要更新一開始 fetch news 的預處理 label
 Done update to rest API
 Done track user's prefferec label, source, category
+Done Check seen filtering function
+Done No actual personalization algorithm
+Done refresh preference button: Error refreshing preferences: [Error: HTTP 403]
+Done labels 有問題
+Done setting, preference visability issue 可能 lambda 沒建好, 然後 dynamoDB 的 Seen 欄位 和 activity 對不起來
 
-- Check seen filtering function
-- conduct GSI
-- No actual personalization algorithm
 
+- make smoother swipe experience
+- AUTH_UPDATES.md, setup google and apple sign-in
+- how to launch to testflight
 
-Migration Needed:
-API Routes → AWS Lambda functions
-Local stores → AWS DynamoDB tables
-Development scripts → Remove local server dependencies
