@@ -84,6 +84,3 @@ Private project
   <img src="https://github.com/user-attachments/assets/030ab6e0-9364-420f-bdfa-b0f1aa5cf2ab" width="20%">
   <img src="https://github.com/user-attachments/assets/249dad93-8cc9-4b8f-af09-668ae67e5955" width="20%">
 </p>
-
-
-<img width="1320" height="2868" alt="Simulator Screenshot - iPhone 16 Pro Max - 2025-10-01 at 20 25 20" src="https://github.com/user-attachments/assets/27a33e90-afc8-4f23-9b39-ca14670274ac" />
