@@ -78,6 +78,13 @@ The application is configured for AWS deployment using Amplify and Lambda functi
 
 Private project
 
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/8f99f478-a8ba-4dda-a82a-625bf0c1d8ea" width="20%">
+  <img src="https://github.com/user-attachments/assets/a1a88abd-2556-4819-8f30-37557fe35a75" width="20%">
+  <img src="https://github.com/user-attachments/assets/030ab6e0-9364-420f-bdfa-b0f1aa5cf2ab" width="20%">
+  <img src="https://github.com/user-attachments/assets/249dad93-8cc9-4b8f-af09-668ae67e5955" width="20%">
+</p>
+
 <img width="1320" height="2868" alt="Simulator Screenshot - iPhone 16 Pro Max - 2025-10-01 at 20 26 20" src="https://github.com/user-attachments/assets/8f99f478-a8ba-4dda-a82a-625bf0c1d8ea" />
 <img width="1320" height="2868" alt="Simulator Screenshot - iPhone 16 Pro Max - 2025-10-01 at 20 26 17" src="https://github.com/user-attachments/assets/a1a88abd-2556-4819-8f30-37557fe35a75" />
 <img width="1320" height="2868" alt="Simulator Screenshot - iPhone 16 Pro Max - 2025-10-01 at 20 26 09" src="https://github.com/user-attachments/assets/030ab6e0-9364-420f-bdfa-b0f1aa5cf2ab" />
