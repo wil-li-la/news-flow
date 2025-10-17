@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import { summarizeNews } from './aiSummary.js';
 
+(async () => {
 try {
     const result = await summarizeNews({
         title: 'Sample: NASA anounces new mission',
@@ -14,6 +15,6 @@ NASA officials say the mission will pave the way for Artemis III, planned for no
     console.error('aiSummaryTest failed:', e.message);
     process.exit(1);
 }
-
+})();
 
 // aiSummary appears to work 8-11, 3:11 AM

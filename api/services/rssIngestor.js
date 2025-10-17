@@ -247,7 +247,7 @@ async function fetchOgImage(pageUrl, feedUrl) {
         };
         const og = matchMeta('og:image') || matchMeta('twitter:image', 'name');
         return absoluteUrl(og, pageUrl) || absoluteUrl(og, feedUrl);
-    } catch (e) {
+    } catch {
         return null;
     }
 }

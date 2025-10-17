@@ -61,7 +61,7 @@ function ArticleCard({ article, variant = 'list', onPass, onLike, onOpenLink }: 
                 <Text key={i} style={styles.bullet} numberOfLines={1}>• {b}</Text>
               ))}
             </View>
-          ) : !!(article.structuredSummary ?? article.summary ?? article.description) ? (
+          ) : (article.structuredSummary ?? article.summary ?? article.description) ? (
             <Text style={styles.summary} numberOfLines={5}>
               {article.structuredSummary ?? article.summary ?? article.description}
             </Text>

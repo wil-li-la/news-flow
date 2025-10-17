@@ -13,7 +13,7 @@ function isPortInUse(port, host = 'localhost', timeout = 800) {
     const finish = (inUse) => {
       if (done) return;
       done = true;
-      try { socket.destroy(); } catch {}
+      try { socket.destroy(); } catch { /* ignore */ }
       resolve(inUse);
     };
 

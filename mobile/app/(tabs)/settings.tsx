@@ -259,7 +259,7 @@ export default function SettingsScreen() {
               </Pressable>
               
               <Pressable onPress={() => setStep({ kind: 'signUp' })} style={styles.secondaryBtn}>
-                <Text style={styles.secondaryBtnText}>Don't have an account? Sign Up</Text>
+                <Text style={styles.secondaryBtnText}>Don&apos;t have an account? Sign Up</Text>
               </Pressable>
             </>
           )}

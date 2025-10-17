@@ -24,11 +24,11 @@ jobs:
       - name: Lint root
         run: npm run lint
 
-      # TODO: Enable mobile lint after resolving ESLint version conflict
-      # - name: Install mobile deps
-      #   run: npm --prefix mobile install
-      # - name: Lint mobile
-      #   run: npm run lint:mobile
+      - name: Install mobile deps
+        run: npm --prefix mobile install
+
+      - name: Lint mobile
+        run: npm run lint:mobile
 
   typecheck:
     name: TypeCheck (root + mobile)
