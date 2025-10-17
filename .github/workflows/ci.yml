@@ -43,10 +43,11 @@ jobs:
           node-version: '18'
           cache: 'npm'
 
-      - name: Install deps (root + mobile)
+      - name: Install deps (root + mobile + amplify)
         run: |
           npm install
           npm --prefix mobile install
+          npm --prefix amplify install
 
       - name: Typecheck root
         run: npm run typecheck
