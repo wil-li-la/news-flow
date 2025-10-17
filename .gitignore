@@ -23,3 +23,30 @@ dist-ssr
 *.sln
 *.sw?
 .env
+
+# Environment overrides (keep .env.example tracked)
+.env.*.local
+
+# Coverage and test artifacts
+coverage/
+.nyc_output/
+*.coverage
+
+# Package archives
+*.tgz
+
+# Lambda build artifacts
+current-lambda.zip
+lambda/*.zip
+
+# Mobile (Expo/React Native) caches and backups
+mobile/.expo/
+mobile/.eas/
+mobile/.expo-shared/
+mobile/.metro-cache/
+mobile/.cache/
+mobile/_ui_backup/
+
+# Platform build outputs (if present)
+mobile/android/app/build/
+mobile/ios/build/

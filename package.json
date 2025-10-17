@@ -14,7 +14,11 @@
     "mobile:android": "concurrently \"npm run dev:api\" \"npm --prefix mobile run android\"",
     "start:with-api": "npm run mobile:start",
     "ios:with-api": "npm run mobile:ios",
-    "android:with-api": "npm run mobile:android"
+    "android:with-api": "npm run mobile:android",
+    "lint": "eslint api lambda scripts --ext .js,.ts,.tsx --max-warnings=0",
+    "typecheck": "tsc --noEmit",
+    "typecheck:mobile": "npm --prefix mobile run typecheck",
+    "ci:install": "npm ci && npm --prefix mobile ci"
   },
   "dependencies": {
     "@aws-sdk/client-api-gateway": "^3.899.0",
