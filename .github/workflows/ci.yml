@@ -1,0 +1,56 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  lint:
+    name: Lint (root)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install deps (root only)
+        run: npm install
+
+      - name: Lint root
+        run: npm run lint
+
+      - name: Install mobile deps
+        run: npm --prefix mobile install
+
+      - name: Lint mobile
+        run: npm run lint:mobile
+
+  typecheck:
+    name: TypeCheck (root + mobile)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install deps (root + mobile + amplify)
+        run: |
+          npm install
+          npm --prefix mobile install
+          npm --prefix amplify install
+
+      - name: Typecheck root
+        run: npm run typecheck
+
+      - name: Typecheck mobile
+        run: npm run typecheck:mobile
